@@ -1,0 +1,16 @@
+[package]
+name = "gnss_preprocess"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rinex = "0.16"
+chrono = "0.4"
+csv = "1.3"
+
+[package.metadata.scripts]
+run = "cargo run"
+check = "cargo check"
+build = "cargo build"
+release = "cargo build --release"
+
