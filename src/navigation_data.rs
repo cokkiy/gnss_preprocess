@@ -1,4 +1,3 @@
-#[allow(dead_code)]
 use std::{collections::HashMap, error::Error};
 
 use rinex::{
