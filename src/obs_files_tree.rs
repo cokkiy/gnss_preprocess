@@ -1,18 +1,11 @@
 /// This module contains the implementation of the `ObsFilesTree` struct and related types.
-///
-
-///
-/// The `ObsFilesTreeItem` struct represents an item in the `ObsFilesTree`, containing the year and a list of `ObsFileItem` objects.
-/// It also provides an iterator, `ObsFilesTreeItemIter`, to iterate over the observation file paths.
-///
-/// The `ObsFilesTree` struct contains a collection of `ObsFilesTreeItem` objects and provides methods to iterate over the observation file paths.
+#[cfg(test)]
+use std::collections::HashMap;
 use std::path::PathBuf;
 
-use chrono::format::Item;
-
-/// The `ObsFileItem` struct represents a single item in the tree, containing the day of year and a list of observation file names
+/// The `ObsFilesInDay` struct contains the day of year and a list of observation file names
 /// which observed in that day.
-/// It also provides an iterator, `ObsFileItemIter`, to iterate over the observation file paths.
+/// It also provides an iterator to iterate over the observation file paths.
 /// # Fields
 ///
 /// - `day_of_year`: The day of the year.
@@ -24,7 +17,7 @@ use chrono::format::Item;
 /// use std::path::PathBuf;
 ///
 /// let obs_files = vec!["file1.obs".to_string(), "file2.obs".to_string()];
-/// let obs_file_item = ObsFileItem::new(123, obs_files);
+/// let obs_file_item = ObsFilesInDay::new(123, obs_files);
 ///
 /// let mut iter = obs_file_item.iter();
 /// assert_eq!(iter.next(), Some(PathBuf::from("123/daily/file1.obs")));
@@ -32,19 +25,19 @@ use chrono::format::Item;
 /// assert_eq!(iter.next(), None);
 /// ```
 #[derive(Clone, Eq, Debug)]
-pub(crate) struct ObsFileItem {
+pub(crate) struct ObsFilesInDay {
     day_of_year: u16,
     obs_files: Vec<String>,
 }
 
-impl PartialEq for ObsFileItem {
+impl PartialEq for ObsFilesInDay {
     fn eq(&self, other: &Self) -> bool {
         self.day_of_year == other.day_of_year
     }
 }
 
-impl ObsFileItem {
-    /// Creates a new `ObsFileItem` with the specified `day_of_year` and `obs_files`.
+impl ObsFilesInDay {
+    /// Creates a new `ObsFilesInDay` with the specified `day_of_year` and `obs_files`.
     ///
     /// # Arguments
     ///
@@ -53,16 +46,16 @@ impl ObsFileItem {
     ///
     /// # Returns
     ///
-    /// A new `ObsFileItem` instance.
+    /// A new `ObsFilesInDay` instance.
     ///
     /// # Example
     ///
     /// ```
-    /// use gnss_preprocess::ObsFileItem;
+    /// use gnss_preprocess::ObsFilesInDay;
     ///
     /// let day_of_year = 123;
     /// let obs_files = vec!["file1.obs".to_string(), "file2.obs".to_string()];
-    /// let obs_file_item = ObsFileItem::new(day_of_year, obs_files);
+    /// let obs_file_item = ObsFilesInDay::new(day_of_year, obs_files);
     /// ```
     pub(crate) fn new(day_of_year: u16, obs_files: Vec<String>) -> Self {
         Self {
@@ -71,16 +64,32 @@ impl ObsFileItem {
         }
     }
 
-    /// Returns an iterator over the `ObsFileItem`.
+    /// Returns an iterator over the paths of the observation files in the `ObsFilesInDay`.
     ///
     /// # Arguments
     ///
-    /// * `self` - A reference to the `ObsFileItem`.
+    /// * `self` - A reference to the `ObsFilesInDay`.
     ///
     /// # Returns
     ///
-    /// An `ObsFileItemIter` iterator.
-    pub(crate) fn iter<'a>(self: &'a Self) -> impl Iterator<Item = PathBuf> + 'a {
+    /// An iterator over the paths of the observation files.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use gnss_preprocess::ObsFilesInDay;
+    /// use std::path::PathBuf;
+    ///
+    /// let day_of_year = 123;
+    /// let obs_files = vec!["file1.obs".to_string(), "file2.obs".to_string()];
+    /// let obs_file_item = ObsFilesInDay::new(day_of_year, obs_files);
+    ///
+    /// let paths: Vec<PathBuf> = obs_file_item.iter().collect();
+    /// for path in paths {
+    ///     println!("Path: {:?}", path);
+    /// }
+    /// ```
+    pub(crate) fn iter(&self) -> impl Iterator<Item = PathBuf> + '_ {
         self.obs_files.iter().map(|file_name| {
             PathBuf::from(self.day_of_year.to_string())
                 .join("daily")
@@ -89,13 +98,14 @@ impl ObsFileItem {
     }
 }
 
-/// The `ObsFilesTreeItem` struct represents an item in the `ObsFilesTree`, containing the year and a list of `ObsFileItem` objects.
-/// It also provides an iterator, `ObsFilesTreeItemIter`, to iterate over the observation file paths.
+/// The `ObsFilesInYear` struct represents an item in the `ObsFilesTree`, containing the year and a list of `ObsFilesInDay` objects
+/// which observed in that year.
+/// It also provides an iterator to iterate over the observation file paths.
 ///
 /// # Fields
 ///
 /// - `year`: The year of the observation files.
-/// - `obs_file_items`: A list of `ObsFileItem` objects representing the observation files for the year.
+/// - `obs_file_items`: A list of `ObsFilesInDay` objects representing the observation files for the year.
 ///
 /// # Examples
 ///
@@ -103,7 +113,7 @@ impl ObsFileItem {
 /// use std::path::PathBuf;
 ///
 /// let obs_files = vec!["file1.obs".to_string(), "file2.obs".to_string()];
-/// let obs_file_item = ObsFileItem::new(123, obs_files);
+/// let obs_file_item = ObsFilesInDay::new(123, obs_files);
 ///
 /// let mut iter = obs_file_item.iter();
 /// assert_eq!(iter.next(), Some(PathBuf::from("123/daily/file1.obs")));
@@ -111,33 +121,76 @@ impl ObsFileItem {
 /// assert_eq!(iter.next(), None);
 /// ```
 #[derive(Clone, Eq, Debug)]
-pub struct ObsFilesTreeItem {
+pub(crate) struct ObsFilesInYear {
     year: u16,
-    obs_file_items: Vec<ObsFileItem>,
+    obs_file_items: Vec<ObsFilesInDay>,
 }
 
-impl ObsFilesTreeItem {
-    /// Creates a new `ObsFilesTreeItem` object.
+#[allow(dead_code)]
+impl ObsFilesInYear {
+    /// Creates a new `ObsFilesInYear` object.
     /// # Arguments
     /// - `year`: The year of the observation files.
-    /// - `obs_file_items`: A list of `ObsFileItem` objects representing the observation files for the year.
+    /// - `obs_file_items`: A list of `ObsFilesInDay` objects representing the observation files for the year.
     ///
     /// # Returns
-    /// A new `ObsFilesTreeItem` object.
+    /// A new `ObsFilesInYear` object.
     ///
     /// # Examples
     /// ```
     /// use std::path::PathBuf;
-    /// use gnss_preprocess::obs_files_tree::{ObsFileItem, ObsFilesTreeItem};
+    /// use gnss_preprocess::obs_files_tree::{ObsFilesInDay, ObsFilesInYear};
     /// let obs_files = vec!["file1.obs".to_string(), "file2.obs".to_string()];
-    /// let obs_file_item = ObsFileItem::new(123, obs_files);
-    /// let obs_files_tree_item = ObsFilesTreeItem::new(2023, vec![obs_file_item]);
+    /// let obs_file_item = ObsFilesInDay::new(123, obs_files);
+    /// let obs_files_tree_item = ObsFilesInYear::new(2023, vec![obs_file_item]);
     /// ```
-    pub fn new(year: u16, obs_file_items: Vec<ObsFileItem>) -> Self {
+    pub(crate) fn new(year: u16, obs_file_items: Vec<ObsFilesInDay>) -> Self {
         Self {
             year,
             obs_file_items,
         }
+    }
+
+    /// Creates an empty `ObsFilesInYear` object for the specified year.
+    ///
+    /// # Arguments
+    /// - `year`: The year of the observation files.
+    ///
+    /// # Returns
+    /// A new `ObsFilesInYear` object with no observation files.
+    ///
+    /// # Examples
+    /// ```
+    /// use gnss_preprocess::obs_files_tree::ObsFilesInYear;
+    /// let obs_files_tree_item = ObsFilesInYear::create_empty(2023);
+    /// ```
+    pub(crate) fn create_empty(year: u16) -> Self {
+        Self {
+            year,
+            obs_file_items: Vec::new(),
+        }
+    }
+
+    /// Returns how much days in the `ObsFilesInYear`.
+    pub(crate) fn days(&self) -> usize {
+        self.obs_file_items.len()
+    }
+
+    /// Adds an `ObsFilesInDay` to the `ObsFilesInYear`.
+    ///
+    /// # Arguments
+    /// - `obs_file_item`: The `ObsFilesInDay` to be added.
+    ///
+    /// # Examples
+    /// ```
+    /// use gnss_preprocess::obs_files_tree::{ObsFilesInDay, ObsFilesInYear};
+    /// let obs_files = vec!["file1.obs".to_string(), "file2.obs".to_string()];
+    /// let obs_file_item = ObsFilesInDay::new(123, obs_files);
+    /// let mut obs_files_tree_item = ObsFilesInYear::new(2023, vec![obs_file_item]);
+    /// obs_files_tree_item.add_item(obs_file_item);
+    /// ```
+    pub(crate) fn add_item(&mut self, obs_file_item: ObsFilesInDay) {
+        self.obs_file_items.push(obs_file_item);
     }
 
     /// Returns an iterator over the observation file paths.
@@ -146,31 +199,103 @@ impl ObsFilesTreeItem {
     /// # Examples
     /// ```
     /// use std::path::PathBuf;
-    /// use gnss_preprocess::obs_files_tree::{ObsFileItem, ObsFilesTreeItem};
+    /// use gnss_preprocess::obs_files_tree::{ObsFilesInDay, ObsFilesInYear};
     /// let obs_files = vec!["file1.obs".to_string(), "file2.obs".to_string()];
-    /// let obs_file_item = ObsFileItem::new(123, obs_files);
-    /// let obs_files_tree_item = ObsFilesTreeItem::new(2023, vec![obs_file_item]);
+    /// let obs_file_item = ObsFilesInDay::new(123, obs_files);
+    /// let obs_files_tree_item = ObsFilesInYear::new(2023, vec![obs_file_item]);
     /// let mut iter = obs_files_tree_item.iter();
     /// assert_eq!(iter.next(), Some(PathBuf::from("2023/123/daily/file1.obs")));
     /// assert_eq!(iter.next(), Some(PathBuf::from("2023/123/daily/file2.obs")));
     /// assert_eq!(iter.next(), None);
     /// ```
-    pub fn iter<'a>(self: &'a Self) -> impl Iterator<Item = PathBuf> + 'a {
+    pub(crate) fn iter(&self) -> impl Iterator<Item = PathBuf> + '_ {
         self.obs_file_items.iter().flat_map(|obs_item| {
             obs_item
                 .iter()
                 .map(|path| PathBuf::from(self.year.to_string()).join(path))
         })
     }
+
+    /// Returns an iterator over the observation file paths for each day in the `ObsFilesInYear`.
+    ///
+    /// # Returns
+    /// An iterator yielding tuples containing the year, day of the year and the corresponding observation file path.
+    ///
+    /// # Examples
+    /// ```
+    /// use std::path::PathBuf;
+    /// use gnss_preprocess::obs_files_tree::{ObsFilesInDay, ObsFilesInYear};
+    /// let obs_files = vec!["file1.obs".to_string(), "file2.obs".to_string()];
+    /// let obs_file_item = ObsFilesInDay::new(123, obs_files);
+    /// let obs_files_tree_item = ObsFilesInYear::new(2023, vec![obs_file_item]);
+    /// let mut iter = obs_files_tree_item.iter_day_paths();
+    /// assert_eq!(iter.next(), Some((123, PathBuf::from("2023/123/daily/file1.obs"))));
+    /// assert_eq!(iter.next(), Some((123, PathBuf::from("2023/123/daily/file2.obs"))));
+    /// assert_eq!(iter.next(), None);
+    /// ```
+    pub(crate) fn iter_paths(&self) -> impl Iterator<Item = (u16, u16, PathBuf)> + '_ {
+        self.obs_file_items.iter().flat_map(|obs_item| {
+            obs_item.iter().map(|path| {
+                (
+                    self.year,
+                    obs_item.day_of_year,
+                    PathBuf::from(self.year.to_string()).join(path),
+                )
+            })
+        })
+    }
+
+    /// Returns a reference to the observation files for each day in the `ObsFilesInYear`.
+    ///
+    /// # Returns
+    /// A reference to a slice of `ObsFilesInDay` objects representing the observation files for each day in the year.
+    ///
+    /// # Examples
+    /// ```
+    /// use gnss_preprocess::obs_files_tree::{ObsFilesInDay, ObsFilesInYear};
+    /// let obs_files = vec!["file1.obs".to_string(), "file2.obs".to_string()];
+    /// let obs_file_item = ObsFilesInDay::new(123, obs_files);
+    /// let obs_files_tree_item = ObsFilesInYear::new(2023, vec![obs_file_item]);
+    /// let day_files = obs_files_tree_item.get_day_files();
+    /// ```
+    pub(crate) fn get_day_files(&self) -> &[ObsFilesInDay] {
+        &self.obs_file_items
+    }
+
+    /// Sorts the observation files in the `ObsFilesInYear` by the day of the year
+    /// in ascending order.
+    /// # Examples
+    /// ```
+    /// use gnss_preprocess::obs_files_tree::{ObsFilesInDay, ObsFilesInYear};
+    /// let obs_files = vec!["file1.obs".to_string(), "file2.obs".to_string()];
+    /// let obs_file_item = ObsFilesInDay::new(123, obs_files);
+    /// let mut obs_files_tree_item = ObsFilesInYear::new(2023, vec![obs_file_item]);
+    /// obs_files_tree_item.sort();
+    /// ```
+    pub(crate) fn sort(&mut self) {
+        self.obs_file_items.sort_by_key(|item| item.day_of_year);
+    }
 }
 
-impl PartialEq for ObsFilesTreeItem {
+impl PartialEq for ObsFilesInYear {
     fn eq(&self, other: &Self) -> bool {
         self.year == other.year
     }
 }
 
-/// The `ObsFilesTree` struct contains a collection of `ObsFilesTreeItem` objects and provides methods to iterate over the observation file paths.
+impl PartialOrd for ObsFilesInYear {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.year.partial_cmp(&other.year)
+    }
+}
+
+impl Ord for ObsFilesInYear {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.year.cmp(&other.year)
+    }
+}
+
+/// The `ObsFilesTree` struct contains a collection of `ObsFilesInYear` objects and provides methods to iterate over the observation file paths.
 ///
 /// # Examples
 ///
@@ -183,10 +308,13 @@ impl PartialEq for ObsFilesTreeItem {
 ///     println!("Observation file: {:?}", obs_file);
 /// }
 /// ```
+#[derive(Clone, Debug)]
+#[allow(dead_code)]
 pub(crate) struct ObsFilesTree {
-    items: Vec<ObsFilesTreeItem>,
+    items: Vec<ObsFilesInYear>,
 }
 
+#[allow(dead_code)]
 impl ObsFilesTree {
     /// Creates a new `ObsFilesTree` object.
     ///
@@ -197,13 +325,26 @@ impl ObsFilesTree {
         Self { items: Vec::new() }
     }
 
-    /// Adds an `ObsFilesTreeItem` to the `ObsFilesTree`.
+    /// Adds an `ObsFilesInYear` to the `ObsFilesTree`
+    /// and sorts the observation files in the `ObsFilesInYear` by the day of the year.
     ///
     /// # Arguments
     ///
-    /// * `item` - The `ObsFilesTreeItem` to add.
-    pub(crate) fn add_item(&mut self, item: ObsFilesTreeItem) {
-        self.items.push(item);
+    /// * `item` - The `ObsFilesInYear` to add.
+    pub(crate) fn add_item(&mut self, mut item: ObsFilesInYear) {
+        item.sort();
+        let index = self.items.binary_search(&item).unwrap_or_else(|x| x);
+        self.items.insert(index, item);
+    }
+
+    /// Returns the total number of days in the `ObsFilesTree`.
+    /// # Returns
+    /// The total number of days in the `ObsFilesTree`.
+    pub(crate) fn get_day_numbers(&self) -> usize {
+        self.items
+            .iter()
+            .map(|item| item.obs_file_items.len())
+            .sum()
     }
 
     /// Returns an iterator over the observation file paths in the `ObsFilesTree`.
@@ -211,108 +352,79 @@ impl ObsFilesTree {
     /// # Returns
     ///
     /// An iterator over the observation file paths.
-    pub(crate) fn get_obs_files<'a>(&'a self) -> impl Iterator<Item = PathBuf> + 'a {
+    pub(crate) fn get_obs_files(&self) -> impl Iterator<Item = PathBuf> + '_ {
         self.items.iter().flat_map(|item| item.iter())
     }
-}
-#[cfg(test)]
-mod tests {
-    use super::*;
 
-    #[test]
-    fn test_obs_file_item_iter() {
-        let obs_files = vec!["file1.obs".to_string(), "file2.obs".to_string()];
-        let obs_file_item = ObsFileItem::new(123, obs_files);
-
-        let mut iter = obs_file_item.iter();
-        assert_eq!(iter.next(), Some(PathBuf::from("123/daily/file1.obs")));
-        assert_eq!(iter.next(), Some(PathBuf::from("123/daily/file2.obs")));
-        assert_eq!(iter.next(), None);
+    /// Returns an iterator over the observation file paths in the `ObsFilesTree`.
+    ///
+    /// # Returns
+    ///
+    /// An iterator over the observation file paths, which yields tuples containing
+    ///  the year, day of the year and the corresponding observation file path.
+    pub(crate) fn get_files(&self) -> impl Iterator<Item = (u16, u16, PathBuf)> + '_ {
+        self.items.iter().flat_map(|item| item.iter_paths())
     }
 
-    #[test]
-    fn test_obs_file_item_iter_empty() {
-        let obs_files = Vec::new();
-        let obs_file_item = ObsFileItem::new(123, obs_files);
-
-        let mut iter = obs_file_item.iter();
-        assert_eq!(iter.next(), None);
+    /// Splits the `ObsFilesTree` into two parts based on the given percentage
+    /// which counts the number in days not in files.
+    ///
+    /// # Arguments
+    ///
+    /// * `percent` - The percentage at which to split the `ObsFilesTree`.
+    ///
+    /// # Returns
+    ///
+    /// A tuple containing two `ObsFilesTree` objects, representing the left and right parts of the split.
+    pub(crate) fn split_by_percent(&self, percent: u8) -> (Self, Self) {
+        let total_count = self.get_day_numbers();
+        let left_count = (total_count as f64 * percent as f64 / 100.0).round() as usize;
+        let mut left = Vec::new();
+        let mut right = Vec::new();
+        let mut _count = 0;
+        for year_files in &self.items {
+            if _count < left_count {
+                if _count + year_files.days() < left_count {
+                    left.push(year_files.clone());
+                    _count += year_files.days();
+                } else {
+                    let left_part_year = ObsFilesInYear::new(
+                        year_files.year,
+                        year_files.get_day_files()[..(left_count - _count)].to_vec(),
+                    );
+                    let right_part_year = ObsFilesInYear::new(
+                        year_files.year,
+                        year_files.get_day_files()[(left_count - _count)..].to_vec(),
+                    );
+                    _count += left_part_year.days();
+                    left.push(left_part_year);
+                    right.push(right_part_year);
+                }
+            } else {
+                right.push(year_files.clone());
+            }
+        }
+        (ObsFilesTree { items: left }, ObsFilesTree { items: right })
     }
 
-    #[test]
-    fn test_obs_file_item_iter_multiple_items() {
-        let obs_files1 = vec!["file1.obs".to_string(), "file2.obs".to_string()];
-        let obs_file_item1 = ObsFileItem::new(123, obs_files1);
-
-        let obs_files2 = vec!["file3.obs".to_string(), "file4.obs".to_string()];
-        let obs_file_item2 = ObsFileItem::new(456, obs_files2);
-
-        let mut iter = obs_file_item1.iter().chain(obs_file_item2.iter());
-        assert_eq!(iter.next(), Some(PathBuf::from("123/daily/file1.obs")));
-        assert_eq!(iter.next(), Some(PathBuf::from("123/daily/file2.obs")));
-        assert_eq!(iter.next(), Some(PathBuf::from("456/daily/file3.obs")));
-        assert_eq!(iter.next(), Some(PathBuf::from("456/daily/file4.obs")));
-        assert_eq!(iter.next(), None);
-    }
-
-    #[test]
-    fn test_obs_files_tree_item_iter() {
-        let obs_files = vec!["file1.obs".to_string(), "file2.obs".to_string()];
-        let obs_file_item = ObsFileItem::new(123, obs_files);
-        let obs_files_tree_item = ObsFilesTreeItem::new(2023, vec![obs_file_item]);
-
-        let mut iter = obs_files_tree_item.iter();
-        assert_eq!(iter.next(), Some(PathBuf::from("2023/123/daily/file1.obs")));
-        assert_eq!(iter.next(), Some(PathBuf::from("2023/123/daily/file2.obs")));
-        assert_eq!(iter.next(), None);
-    }
-
-    #[test]
-    fn test_obs_files_tree_item_iter_empty() {
-        let obs_files_tree_item = ObsFilesTreeItem::new(2023, Vec::new());
-
-        let mut iter = obs_files_tree_item.iter();
-        assert_eq!(iter.next(), None);
-    }
-
-    #[test]
-    fn test_obs_files_tree_item_iter_multiple_items() {
-        let obs_files1 = vec!["file1.obs".to_string(), "file2.obs".to_string()];
-        let obs_file_item1 = ObsFileItem::new(123, obs_files1);
-
-        let obs_files2 = vec!["file3.obs".to_string(), "file4.obs".to_string()];
-        let obs_file_item2 = ObsFileItem::new(456, obs_files2);
-
-        let obs_files_tree_item = ObsFilesTreeItem::new(2023, vec![obs_file_item1, obs_file_item2]);
-
-        let mut iter = obs_files_tree_item.iter();
-        assert_eq!(iter.next(), Some(PathBuf::from("2023/123/daily/file1.obs")));
-        assert_eq!(iter.next(), Some(PathBuf::from("2023/123/daily/file2.obs")));
-        assert_eq!(iter.next(), Some(PathBuf::from("2023/456/daily/file3.obs")));
-        assert_eq!(iter.next(), Some(PathBuf::from("2023/456/daily/file4.obs")));
-        assert_eq!(iter.next(), None);
-    }
-
-    #[test]
-    fn test_obs_files_tree_get_obs_files() {
-        let obs_files1 = vec!["file1.obs".to_string(), "file2.obs".to_string()];
-        let obs_file_item1 = ObsFileItem::new(123, obs_files1);
-
-        let obs_files2 = vec!["file3.obs".to_string(), "file4.obs".to_string()];
-        let obs_file_item2 = ObsFileItem::new(456, obs_files2);
-
-        let obs_files_tree_item1 = ObsFilesTreeItem::new(2023, vec![obs_file_item1]);
-        let obs_files_tree_item2 = ObsFilesTreeItem::new(2024, vec![obs_file_item2]);
-
+    /// Creates an `ObsFilesTree` object from the specified observation data.
+    /// This method is used for testing purposes.
+    #[cfg(test)]
+    pub(super) fn from_data(obs_data: HashMap<u16, HashMap<u16, Vec<&'static str>>>) -> Self {
         let mut obs_files_tree = ObsFilesTree::new();
-        obs_files_tree.add_item(obs_files_tree_item1);
-        obs_files_tree.add_item(obs_files_tree_item2);
-
-        let mut iter = obs_files_tree.get_obs_files();
-        assert_eq!(iter.next(), Some(PathBuf::from("2023/123/daily/file1.obs")));
-        assert_eq!(iter.next(), Some(PathBuf::from("2023/123/daily/file2.obs")));
-        assert_eq!(iter.next(), Some(PathBuf::from("2024/456/daily/file3.obs")));
-        assert_eq!(iter.next(), Some(PathBuf::from("2024/456/daily/file4.obs")));
-        assert_eq!(iter.next(), None);
+        for (year, day_files) in obs_data {
+            let mut obs_file_items = Vec::new();
+            for (day, files) in day_files {
+                let obs_file_item =
+                    ObsFilesInDay::new(day, files.iter().map(|f| f.to_string()).collect());
+                obs_file_items.push(obs_file_item);
+            }
+            let obs_files_tree_item = ObsFilesInYear::new(year, obs_file_items);
+            obs_files_tree.add_item(obs_files_tree_item);
+        }
+        obs_files_tree
     }
 }
+
+#[cfg(test)]
+mod tests;
