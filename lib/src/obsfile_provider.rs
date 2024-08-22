@@ -2,17 +2,33 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+use rinex::Rinex;
+
 use crate::obs_files_tree::{ObsFilesInDay, ObsFilesInYear, ObsFilesTree};
 
+/// `ObsFileProvider` is a struct that represents a provider of observation data file.
+/// With this struct, you can get the total count of observation files, the number of unique days,
+/// and split the observation files into two parts based on a given percentage to get training and testing files.
+/// The struct also provides an iterator over the observation file paths. Using the iterator, you can get the year,
+/// day of the year, and the corresponding observation file path.
 #[derive(Clone)]
 #[allow(dead_code)]
-pub struct ObsDataProvider {
+pub struct ObsFileProvider {
     obs_files_path: String,
     obs_files_tree: ObsFilesTree,
 }
 
 #[allow(dead_code)]
-impl ObsDataProvider {
+impl ObsFileProvider {
+    /// Creates a new `ObsFileProvider` instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `obs_files_path` - The path to the observation files.
+    ///
+    /// # Returns
+    ///
+    /// A new `ObsFileProvider` instance.
     pub fn new(obs_files_path: &str) -> Self {
         Self {
             obs_files_path: obs_files_path.to_string(),
@@ -20,14 +36,35 @@ impl ObsDataProvider {
         }
     }
 
+    /// Returns the total count of observation files in the `ObsFileProvider`.
+    ///
+    /// # Returns
+    ///
+    /// The total count of observation files.
     pub fn get_total_count(&self) -> usize {
         self.obs_files_tree.get_obs_files().count()
     }
 
+    /// Returns the number of unique days represented in the `ObsFileProvider`.
+    ///
+    /// # Returns
+    ///
+    /// The number of unique days.
     pub fn get_day_numbers(&self) -> usize {
         self.obs_files_tree.get_day_numbers()
     }
 
+    /// Splits the `ObsFileProvider` into two instances based on the given percentage
+    /// which count all days in the `ObsFileProvider` and split them into two parts.
+    ///
+    /// # Arguments
+    ///
+    /// * `percent` - The percentage at which to split the `ObsFileProvider`.
+    ///
+    /// # Returns
+    ///
+    /// A tuple containing two `ObsFileProvider` instances, where the first instance contains
+    /// the left portion of the split based on days and the second instance contains the right portion of the split.
     pub fn split_by_percent(&self, percent: u8) -> (Self, Self) {
         let (left, right) = self.obs_files_tree.split_by_percent(percent);
         (
@@ -42,13 +79,13 @@ impl ObsDataProvider {
         )
     }
 
-    /// Returns an iterator over the observation file paths in the `ObsDataProvider`.
+    /// Returns an iterator over the observation file paths in the `ObsFileProvider`.
     ///
     /// # Returns
     ///
     /// An iterator over the observation file paths, which yields tuples containing
     ///  the year, day of the year and the corresponding observation file path.
-    pub(crate) fn iter(&self) -> impl Iterator<Item = (u16, u16, PathBuf)> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = (u16, u16, PathBuf)> + '_ {
         self.obs_files_tree.get_files()
     }
 
@@ -62,6 +99,7 @@ impl ObsDataProvider {
     }
 }
 
+/// Builds an observation files tree from the given observation files path.
 fn build_obs_tree(obs_files_path: &str) -> ObsFilesTree {
     let mut obs_data_tree = ObsFilesTree::new();
     if let Ok(root_dir) = std::fs::read_dir(obs_files_path) {
@@ -120,7 +158,7 @@ mod tests {
                 HashMap::from([(1, vec!["a", "b", "c"]), (2, vec!["d", "e", "f"])]),
             ),
         ]);
-        let obs_data_provider = ObsDataProvider::from_data(obs_data_tree);
+        let obs_data_provider = ObsFileProvider::from_data(obs_data_tree);
         assert_eq!(obs_data_provider.get_day_numbers(), 5);
     }
 
@@ -144,7 +182,7 @@ mod tests {
                 ]),
             ),
         ]);
-        let obs_data_provider = ObsDataProvider::from_data(obs_data_tree);
+        let obs_data_provider = ObsFileProvider::from_data(obs_data_tree);
         assert_eq!(obs_data_provider.get_total_count(), 18);
     }
 

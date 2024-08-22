@@ -1,0 +1,25 @@
+[package]
+name = "gnss_preprocess"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rinex = "0.16"
+chrono = "0.4"
+cubic_spline = "1.0.0"
+splines = "4.3"
+once_cell = "1.19"
+lazy_static = "1.5"
+
+[dev-dependencies]
+rstest = "0.22"
+
+[package.metadata.scripts]
+run = "cargo run"
+check = "cargo check"
+build = "cargo build"
+build-lib = "cargo build --lib"
+build-bin = "cargo build --bin"
+build-example = "cargo build --examples"
+release = "cargo build --release"
+test = "cargo test"

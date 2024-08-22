@@ -1,28 +1,14 @@
-[package]
-name = "gnss_preprocess"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+resolver = "2"
+members = ["lib", "tools/tna_collect"]
 
-[dependencies]
-rinex = "0.16"
-chrono = "0.4"
-cubic_spline = "1.0.0"
-splines = "4.3"
-once_cell = "1.19"
-lazy_static = "1.5"
 
-[dev-dependencies]
-rstest = "0.22"
-
-[package.examples]
-example1 = "examples/onetime_nav_sample.rs"
-
-[package.metadata.scripts]
-run = "cargo run"
+[workspace.metadata.scripts]
 check = "cargo check"
-build = "cargo build"
+build-all = "cargo build"
 build-lib = "cargo build --lib"
-build-bin = "cargo build --bin"
+build-tna = "cargo build --bin tna_collect"
 build-example = "cargo build --examples"
 release = "cargo build --release"
-test="cargo test"
+test = "cargo test"
+run-tna_collect = "cargo run --bin tna_collect"
