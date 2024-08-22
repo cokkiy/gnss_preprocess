@@ -91,7 +91,7 @@ impl ObsFilesInDay {
     /// ```
     pub(crate) fn iter(&self) -> impl Iterator<Item = PathBuf> + '_ {
         self.obs_files.iter().map(|file_name| {
-            PathBuf::from(self.day_of_year.to_string())
+            PathBuf::from(format!("{:03}", self.day_of_year))
                 .join("daily")
                 .join(file_name)
         })
