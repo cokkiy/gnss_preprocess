@@ -5,3 +5,5 @@ edition = "2021"
 
 [dependencies]
 gnss_preprocess = { path = "../../lib" }
+rinex = "0.16"
+csv = "1.3"
