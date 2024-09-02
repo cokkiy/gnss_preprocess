@@ -43,6 +43,7 @@ impl PartialOrd<f64> for SampleResult {
     }
 }
 
+#[allow(dead_code)]
 impl SampleResult {
     /// Retrieves the value of the sample result.
     pub(crate) fn value(&self) -> f64 {
@@ -85,6 +86,7 @@ impl SampleResult {
 }
 
 /// A structure for interpolating navigation data.
+#[derive(Debug, Clone)]
 pub(crate) struct NavDataInterpolation {
     //multi_navigation_data: &'a HashMap<SV, Vec<(Epoch, Ephemeris)>>,
     /// A `HashMap` containing the navigation data records for each satellite.

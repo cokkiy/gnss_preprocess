@@ -501,3 +501,36 @@ fn test_3year_obs_files_tree_split_by_percent() {
         Some((2024, 10, PathBuf::from("2024/10/daily/file7.obs")))
     );
 }
+#[test]
+fn test_get_file() {
+    let mut obs_data = HashMap::new();
+    let mut day_files1 = HashMap::new();
+    day_files1.insert(123, vec!["file1.obs", "file2.obs"]);
+    day_files1.insert(200, vec!["file3.obs", "file4.obs"]);
+    obs_data.insert(2023, day_files1);
+
+    let mut day_files2 = HashMap::new();
+    day_files2.insert(5, vec!["file5.obs", "file6.obs"]);
+    day_files2.insert(10, vec!["file7.obs", "file8.obs"]);
+    obs_data.insert(2024, day_files2);
+
+    let mut day_files3 = HashMap::new();
+    day_files3.insert(50, vec!["file10.obs", "file11.obs"]);
+    day_files3.insert(100, vec!["file12.obs", "file13.obs"]);
+    day_files3.insert(110, vec!["file15.obs", "file16.obs"]);
+    obs_data.insert(2022, day_files3);
+
+    let obs_files_tree = ObsFilesTree::from_data(obs_data);
+    let file1 = obs_files_tree.get_files().next();
+    assert!(file1.is_some());
+    assert_eq!(
+        file1.unwrap(),
+        (2022, 50, PathBuf::from("2022/050/daily/file10.obs"))
+    );
+    let file2 = obs_files_tree.get_files().nth(1);
+    assert!(file2.is_some());
+    assert_eq!(
+        file2.unwrap(),
+        (2022, 50, PathBuf::from("2022/050/daily/file11.obs"))
+    );
+}

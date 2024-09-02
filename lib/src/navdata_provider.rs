@@ -1,8 +1,9 @@
 use std::{collections::HashMap, path::PathBuf};
 
-use rinex::prelude::{Epoch, SV};
+use rinex::prelude::{Constellation, Epoch, SV};
 
 use crate::{
+    constellation_keys::CONSTELLATION_KEYS,
     navdata_interpolation::{NavDataInterpolation, SampleResult},
     navigation_data::{
         combine_navigation_data, get_current_day_last_epoch, get_navigation_data,
@@ -13,12 +14,13 @@ use crate::{
 /// The `NavDataProvider` struct provides navigation data.
 /// It reads navigation data from the navigation files path and provides interpolation for the navigation data foy any
 /// valid time.
+#[derive(Debug, Clone)]
 pub struct NavDataProvider {
     nav_file_path: PathBuf,
     /// The current year.
-    current_year: i32,
+    current_year: u16,
     /// The current day of the year.
-    current_day: i32,
+    current_day: u16,
 
     /// The current day navigation data.
     current_day_nav_data: Option<NavigationData>,
@@ -63,15 +65,15 @@ impl NavDataProvider {
     ///
     /// # Returns
     ///
-    /// An optional `HashMap` containing the sample results, where the keys are strings and the values are floats.
+    /// An optional `Vec<f64>` containing the sample results, where the values are floats.
     /// Returns `None` if the sample results contain any errors or if the navigation data provider does not have the required data.
     pub fn sample(
         &mut self,
-        year: i32,
-        day_of_year: i32,
+        year: u16,
+        day_of_year: u16,
         sv: &SV,
         epoch: &Epoch,
-    ) -> Option<HashMap<String, f64>> {
+    ) -> Option<Vec<f64>> {
         let mut year = year;
         if year > 1000 {
             year -= 2000;
@@ -95,12 +97,12 @@ impl NavDataProvider {
                     sample_results.clone()
                 };
                 if results.iter().any(|(_, r)| r.is_err()) {
-                    convert_results(&sample_results)
+                    convert_results(sv, &sample_results)
                 } else {
-                    convert_results(&results)
+                    convert_results(sv, &results)
                 }
             } else {
-                convert_results(&sample_results)
+                convert_results(sv, &sample_results)
             }
         } else {
             None
@@ -108,7 +110,7 @@ impl NavDataProvider {
     }
 
     /// Updates the navigation data based on the given year and day of year.
-    fn update_data(&mut self, year: i32, day_of_year: i32) {
+    fn update_data(&mut self, year: u16, day_of_year: u16) {
         // check if the day is current day's next day
         let next_day = get_next_day(self.current_year, self.current_day);
         if year == next_day.0 && day_of_year == next_day.1 {
@@ -165,16 +167,62 @@ impl NavDataProvider {
 }
 
 fn convert_results(
+    sv: &SV,
     sample_results: &HashMap<String, Result<SampleResult, String>>,
-) -> Option<HashMap<String, f64>> {
-    let mut final_results = HashMap::new();
-    sample_results.iter().for_each(|(k, r)| {
-        final_results.insert(k.to_string(), r.as_ref().unwrap().value());
+) -> Option<Vec<f64>> {
+    let mut results = vec![0.0; 20];
+    sample_results.iter().for_each(|(field, r)| {
+        let index = match sv.constellation {
+            Constellation::GPS => CONSTELLATION_KEYS
+                .get(&Constellation::GPS)
+                .unwrap()
+                .iter()
+                .position(|k| k == field)
+                .unwrap(),
+            Constellation::Glonass => CONSTELLATION_KEYS
+                .get(&Constellation::Glonass)
+                .unwrap()
+                .iter()
+                .position(|k| k == field)
+                .unwrap(),
+            Constellation::Galileo => CONSTELLATION_KEYS
+                .get(&Constellation::Galileo)
+                .unwrap()
+                .iter()
+                .position(|k| k == field)
+                .unwrap(),
+            Constellation::BeiDou => CONSTELLATION_KEYS
+                .get(&Constellation::BeiDou)
+                .unwrap()
+                .iter()
+                .position(|k| k == field)
+                .unwrap(),
+            Constellation::IRNSS => CONSTELLATION_KEYS
+                .get(&Constellation::IRNSS)
+                .unwrap()
+                .iter()
+                .position(|k| k == field)
+                .unwrap(),
+            Constellation::QZSS => CONSTELLATION_KEYS
+                .get(&Constellation::QZSS)
+                .unwrap()
+                .iter()
+                .position(|k| k == field)
+                .unwrap(),
+            _ => CONSTELLATION_KEYS
+                .get(&Constellation::SBAS)
+                .unwrap()
+                .iter()
+                .position(|k| k == field)
+                .unwrap(),
+        };
+        results[index] = r.as_ref().unwrap().value();
     });
-    return Some(final_results);
+
+    Some(results)
 }
 
-fn get_next_day(year: i32, day_of_year: i32) -> (i32, i32) {
+fn get_next_day(year: u16, day_of_year: u16) -> (u16, u16) {
     if is_leap_year(year) {
         if day_of_year == 366 {
             return (year + 1, 1);
@@ -187,7 +235,7 @@ fn get_next_day(year: i32, day_of_year: i32) -> (i32, i32) {
 
 /// Determines if a given year is a leap year. If the year is two digital,
 /// it is converted to a four digital year by add 2000.
-fn is_leap_year(year: i32) -> bool {
+fn is_leap_year(year: u16) -> bool {
     let mut year = year;
     if year < 100 {
         year += 2000;
@@ -281,7 +329,7 @@ mod tests {
     #[case(101, 11, 2)]
     #[case(105, 15, 5)]
     fn test_sample_with_single_interpolation(
-        #[case] day_of_year: i32,
+        #[case] day_of_year: u16,
         #[case] day: u8,
         #[case] prn: u8,
         #[values("g", "c", "r", "e")] s: &str,
@@ -359,7 +407,7 @@ mod tests {
         let sv = SV::from_str(sv).unwrap();
         let epoch = Epoch::from_gregorian(year, 4, day, 12, 55, 30, 0, TimeScale::GPST);
 
-        let result = nav_data_store.sample(year, day_of_year, &sv, &epoch);
+        let result = nav_data_store.sample(year as u16, day_of_year as u16, &sv, &epoch);
 
         assert!(result.is_some());
         //let sample_results = result.unwrap();
@@ -373,12 +421,12 @@ mod tests {
     #[case(2022, 220, "R04")]
     #[case(2022, 225, "E03")]
     #[case(2022, 230, "E05")]
-    fn test_sample_with_no_data(#[case] year: i32, #[case] day_of_year: i32, #[case] sv: &str) {
+    fn test_sample_with_no_data(#[case] year: i32, #[case] day_of_year: u16, #[case] sv: &str) {
         let mut nav_data_store = NavDataProvider::new("/mnt/d/GNSS_Data/Data/Nav");
         let sv = SV::from_str(sv).unwrap();
         let epoch = Epoch::from_gregorian(year, 4, 10, 12, 0, 0, 0, TimeScale::GPST);
 
-        let result = nav_data_store.sample(year, day_of_year, &sv, &epoch);
+        let result = nav_data_store.sample(year as u16, day_of_year, &sv, &epoch);
 
         assert!(result.is_none());
     }
@@ -394,14 +442,14 @@ mod tests {
     #[case(2020, 366, "E05")]
     fn test_sample_with_cross_interpolation_existing_data(
         #[case] year: i32,
-        #[case] day_of_year: i32,
+        #[case] day_of_year: u16,
         #[case] sv: &str,
     ) {
         let mut nav_data_store = NavDataProvider::new("/mnt/d/GNSS_Data/Data/Nav");
         let sv = SV::from_str(sv).unwrap();
         let epoch = Epoch::from_gregorian(year, 12, 31, 23, 59, 59, 0, TimeScale::GPST);
 
-        let result = nav_data_store.sample(year, day_of_year, &sv, &epoch);
+        let result = nav_data_store.sample(year as u16, day_of_year, &sv, &epoch);
 
         assert!(result.is_some());
     }
@@ -415,10 +463,28 @@ mod tests {
         let result = nav_data_store.sample(21, 69, &sv, &epoch);
 
         assert!(result.is_some());
+        let index = CONSTELLATION_KEYS
+            .get(&Constellation::BeiDou)
+            .unwrap()
+            .iter()
+            .position(|k| *k == "crs")
+            .unwrap();
         let results = result.unwrap();
-        assert_eq!(results.get("crs"), Some(&7.542812500000E+02_f64));
-        assert_eq!(results.get("cic"), Some(&-1.094304025173E-07_f64));
-        assert_eq!(results.get("crc"), Some(&-2.069062500000E+02_f64));
+        assert_eq!(results[index], 7.542812500000E+02_f64);
+        let index = CONSTELLATION_KEYS
+            .get(&Constellation::BeiDou)
+            .unwrap()
+            .iter()
+            .position(|k| *k == "cic")
+            .unwrap();
+        assert_eq!(results[index], -1.094304025173E-07_f64);
+        let index = CONSTELLATION_KEYS
+            .get(&Constellation::BeiDou)
+            .unwrap()
+            .iter()
+            .position(|k| *k == "crc")
+            .unwrap();
+        assert_eq!(results[index], -2.069062500000E+02_f64);
     }
 
     #[test]
@@ -431,18 +497,29 @@ mod tests {
 
         assert!(result.is_some());
         let results = result.unwrap();
+        let index = CONSTELLATION_KEYS
+            .get(&Constellation::Glonass)
+            .unwrap()
+            .iter()
+            .position(|k| *k == "satPosX")
+            .unwrap();
+        assert!(results[index] > 1.031281201172E+04_f64 && results[index] < 1.358619677734E+04_f64);
+        let index = CONSTELLATION_KEYS
+            .get(&Constellation::Glonass)
+            .unwrap()
+            .iter()
+            .position(|k| *k == "satPosY")
+            .unwrap();
         assert!(
-            results.get("satPosX") > Some(&1.031281201172E+04_f64)
-                && results.get("satPosX") < Some(&1.358619677734E+04_f64)
+            results[index] < -1.483764208984E+04_f64 && results[index] > -1.694177734375E+04_f64
         );
-        assert!(
-            results.get("satPosY") < Some(&-1.483764208984E+04_f64)
-                && results.get("satPosY") > Some(&-1.694177734375E+04_f64)
-        );
-        assert!(
-            results.get("velZ") > Some(&2.213027954102E+00_f64)
-                && results.get("velZ") < Some(&2.895979881287E+00_f64)
-        );
+        let index = CONSTELLATION_KEYS
+            .get(&Constellation::Glonass)
+            .unwrap()
+            .iter()
+            .position(|k| *k == "velZ")
+            .unwrap();
+        assert!(results[index] > 2.213027954102E+00_f64 && results[index] < 2.895979881287E+00_f64);
     }
 
     #[test]
@@ -455,17 +532,30 @@ mod tests {
 
         assert!(result.is_some());
         let results = result.unwrap();
+        let index = CONSTELLATION_KEYS
+            .get(&Constellation::SBAS)
+            .unwrap()
+            .iter()
+            .position(|k| *k == "satPosX")
+            .unwrap();
         assert!(
-            results.get("satPosX") > Some(&-1.252322560000E+04_f64)
-                && results.get("satPosX") < Some(&-1.252299320000E+04_f64)
+            results[index] > -1.252322560000E+04_f64 && results[index] < -1.252299320000E+04_f64
         );
+        let index = CONSTELLATION_KEYS
+            .get(&Constellation::SBAS)
+            .unwrap()
+            .iter()
+            .position(|k| *k == "satPosY")
+            .unwrap();
         assert!(
-            results.get("satPosY") > Some(&-4.025408624000E+04_f64)
-                && results.get("satPosY") < Some(&-4.025389512000E+04_f64)
+            results[index] > -4.025408624000E+04_f64 && results[index] < -4.025389512000E+04_f64
         );
-        assert!(
-            results.get("velZ") > Some(&1.940000000000E-03_f64)
-                && results.get("velZ") < Some(&1.944000000000E-03_f64)
-        );
+        let index = CONSTELLATION_KEYS
+            .get(&Constellation::SBAS)
+            .unwrap()
+            .iter()
+            .position(|k| *k == "velZ")
+            .unwrap();
+        assert!(results[index] > 1.940000000000E-03_f64 && results[index] < 1.944000000000E-03_f64);
     }
 }

@@ -2,8 +2,6 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use rinex::Rinex;
-
 use crate::obs_files_tree::{ObsFilesInDay, ObsFilesInYear, ObsFilesTree};
 
 /// `ObsFileProvider` is a struct that represents a provider of observation data file.
