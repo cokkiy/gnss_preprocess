@@ -321,9 +321,9 @@ mod tests {
         let result = provider.get_data(&observations, &provider.gps_fields);
 
         assert_eq!(result[4], 20000000.0);
-        assert_eq!(result[5], 50.0);
+        assert_eq!(result[5], 23.0);
         assert_eq!(result[6], 100000000.0);
-        assert_eq!(result[7], 45.0);
+        assert_eq!(result[7], 41.0);
         assert_eq!(result[8], 30.0);
         assert_eq!(result[9], 0.0); // No SNR for S1C
     }

@@ -199,13 +199,13 @@ mod tests {
         // Assert that the tree contains the expected files
         assert!(obs_data_tree
             .get_obs_files()
-            .any(|f| f.starts_with("2020/1/daily")));
+            .any(|f| f.starts_with("2020/001/daily")));
         assert!(obs_data_tree
             .get_obs_files()
-            .any(|f| f.starts_with("2020/2/daily")));
+            .any(|f| f.starts_with("2020/002/daily")));
         assert!(obs_data_tree
             .get_obs_files()
-            .any(|f| f.starts_with("2020/3/daily")));
+            .any(|f| f.starts_with("2020/003/daily")));
 
         assert!(obs_data_tree
             .get_obs_files()

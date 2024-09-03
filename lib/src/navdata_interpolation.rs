@@ -13,10 +13,13 @@ use crate::constellation_keys::CONSTELLATION_KEYS;
 pub(crate) enum SampleResult {
     /// The sample was successfully retrieved.
     Sampled(f64),
-    /// The sample was retrieved, but the time was clamped.
-    /// This means that the time was outside the range of the navigation data, and the sample was
-    /// clamped to the nearest value.
-    Clamped(f64),
+    /// The sample was retrieved, but the time was before the first epoch of the navigation data.
+    /// The sample was clamped to the first epoch of the navigation data.
+    UnderClamped(f64),
+
+    /// The sample was retrieved, but the time was over the last epoch of the navigation data.
+    /// The sample was clamped to the last epoch of the navigation data.
+    OverClamped(f64),
     /// The value not present in the navigation data. We guessed the value.
     Guessed(f64),
 }
@@ -25,7 +28,8 @@ impl Debug for SampleResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
             SampleResult::Sampled(value) => write!(f, "Sampled({})", value),
-            SampleResult::Clamped(value) => write!(f, "Clamped({})", value),
+            SampleResult::UnderClamped(value) => write!(f, "UnderClamped({})", value),
+            SampleResult::OverClamped(value) => write!(f, "OverClamped({})", value),
             SampleResult::Guessed(value) => write!(f, "Guessed({})", value),
         }
     }
@@ -49,7 +53,8 @@ impl SampleResult {
     pub(crate) fn value(&self) -> f64 {
         match *self {
             SampleResult::Sampled(value)
-            | SampleResult::Clamped(value)
+            | SampleResult::UnderClamped(value)
+            | SampleResult::OverClamped(value)
             | SampleResult::Guessed(value) => value,
         }
     }
@@ -61,12 +66,36 @@ impl SampleResult {
 
     /// Returns `true` if the value is clamped.
     pub(crate) fn is_clamped(&self) -> bool {
-        matches!(self, SampleResult::Clamped(_))
+        matches!(
+            self,
+            SampleResult::UnderClamped(_) | SampleResult::OverClamped(_)
+        )
     }
 
     /// Returns `true` if the value is guessed.
     pub(crate) fn is_guessed(&self) -> bool {
         matches!(self, SampleResult::Guessed(_))
+    }
+
+    /// Returns `true` if the value is under-clamped.
+    /// Otherwise, returns `false`.
+    pub(crate) fn is_under_clamped(&self) -> bool {
+        matches!(self, SampleResult::UnderClamped(_))
+    }
+
+    /// Returns `true` if the value is over-clamped.
+    /// Otherwise, returns `false`.
+    pub(crate) fn is_over_clamped(&self) -> bool {
+        matches!(self, SampleResult::OverClamped(_))
+    }
+
+    /// Returns `true` if the value is valid.
+    /// A valid value is either sampled, under-clamped, or guessed.
+    pub(crate) fn is_valid(&self) -> bool {
+        matches!(
+            self,
+            SampleResult::Sampled(_) | SampleResult::UnderClamped(_) | SampleResult::Guessed(_)
+        )
     }
 
     /// Creates a new `SampleResult::Sampled` instance from a sampled value.
@@ -75,13 +104,32 @@ impl SampleResult {
     }
 
     /// Creates a new `SampleResult::Clamped` instance from a clamped value.
-    pub(crate) fn from_clamped(value: f64) -> Self {
-        SampleResult::Clamped(value)
+    pub(crate) fn from_under_clamped(value: f64) -> Self {
+        SampleResult::UnderClamped(value)
+    }
+
+    /// Creates a new `SampleResult::OverClamped` instance from a clamped value.
+    pub(crate) fn from_over_clamped(value: f64) -> Self {
+        SampleResult::OverClamped(value)
     }
 
     /// Creates a new `SampleResult::Guessed` instance from a guessed value.
     pub(crate) fn from_guessed(value: f64) -> Self {
         SampleResult::Guessed(value)
+    }
+}
+
+impl From<f64> for SampleResult {
+    /// Creates a new `SampleResult::Sampled` instance from a sampled value.
+    fn from(value: f64) -> Self {
+        SampleResult::from_sampled(value)
+    }
+}
+
+impl From<SampleResult> for f64 {
+    /// Creates a new `f64` instance from a `SampleResult`.
+    fn from(sample: SampleResult) -> Self {
+        sample.value()
     }
 }
 
@@ -260,10 +308,10 @@ impl NavDataInterpolation {
             }
             if time >= keys[0].t && time < keys[keys.len() - 1].t {
                 Ok(SampleResult::from_sampled(spline.sample(time).unwrap()))
+            } else if time < keys[0].t {
+                Ok(SampleResult::from_under_clamped(keys[0].value))
             } else {
-                Ok(SampleResult::from_clamped(
-                    spline.clamped_sample(time).unwrap(),
-                ))
+                Ok(SampleResult::from_over_clamped(keys[keys.len() - 1].value))
             }
         } else {
             Err(format!(

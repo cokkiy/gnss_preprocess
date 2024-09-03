@@ -404,4 +404,13 @@ mod tests {
             ])
         );
     }
+
+    #[test]
+    fn test_train_iter() {
+        let mut gnss_data_provider = GNSSDataProvider::new("/mnt/d/GNSS_Data/Data", None);
+        let mut iter = gnss_data_provider.train_iter();
+        assert_eq!(iter.next().unwrap()[148], -8.066050269084e-9);
+        //assert_eq!(iter.next().unwrap()[0], 101_f64);
+        assert_eq!(iter.next().unwrap()[148], -5.396653363703E-09);
+    }
 }

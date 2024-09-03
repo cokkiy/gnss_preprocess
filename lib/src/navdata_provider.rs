@@ -32,6 +32,7 @@ pub struct NavDataProvider {
     cross_interpolation: Option<NavDataInterpolation>,
 }
 
+#[allow(dead_code)]
 impl NavDataProvider {
     /// Creates a new instance of `NavDataProvider`.
     ///
@@ -88,9 +89,11 @@ impl NavDataProvider {
             if sample_results.iter().any(|(_, r)| r.as_ref().is_err()) {
                 None
             } else if sample_results.iter().all(|(_, r)| match r.as_ref() {
-                Ok(result) => result.is_clamped() || result.is_guessed(),
+                Ok(result) => result.is_valid(),
                 Err(_) => false,
             }) {
+                convert_results(sv, &sample_results)
+            } else {
                 let results = if let Some(cross_interpolation) = self.cross_interpolation.as_ref() {
                     cross_interpolation.samples(sv, epoch)
                 } else {
@@ -101,8 +104,6 @@ impl NavDataProvider {
                 } else {
                     convert_results(sv, &results)
                 }
-            } else {
-                convert_results(sv, &sample_results)
             }
         } else {
             None
@@ -557,5 +558,17 @@ mod tests {
             .position(|k| *k == "velZ")
             .unwrap();
         assert!(results[index] > 1.940000000000E-03_f64 && results[index] < 1.944000000000E-03_f64);
+    }
+
+    #[test]
+    fn test_sample_for_galileo() {
+        let mut nav_data_store = NavDataProvider::new("/mnt/d/GNSS_Data/Data/Nav");
+        let sv = SV::from_str("E01").unwrap();
+        let epoch = Epoch::from_gregorian(2020, 1, 1, 0, 0, 0, 0, TimeScale::GPST);
+
+        let result = nav_data_store.sample(20, 1, &sv, &epoch);
+
+        assert!(result.is_some());
+        assert_eq!(result.unwrap()[0], -7.641562260687E-04);
     }
 }

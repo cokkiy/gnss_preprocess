@@ -461,7 +461,7 @@ fn test_3year_obs_files_tree_split_by_percent() {
     assert_eq!(right.get_day_numbers(), 3);
     assert_eq!(
         left.get_files().next(),
-        Some((2022, 50, PathBuf::from("2022/50/daily/file10.obs")))
+        Some((2022, 50, PathBuf::from("2022/050/daily/file10.obs")))
     );
     assert_eq!(
         left.get_files().last(),
@@ -490,15 +490,15 @@ fn test_3year_obs_files_tree_split_by_percent() {
     assert_eq!(right.get_obs_files().count(), 2);
     assert_eq!(
         left.get_files().next(),
-        Some((2022, 50, PathBuf::from("2022/50/daily/file10.obs")))
+        Some((2022, 50, PathBuf::from("2022/050/daily/file10.obs")))
     );
     assert_eq!(
         left.get_files().last(),
-        Some((2024, 5, PathBuf::from("2024/5/daily/file6.obs")))
+        Some((2024, 5, PathBuf::from("2024/005/daily/file6.obs")))
     );
     assert_eq!(
         right.get_files().next(),
-        Some((2024, 10, PathBuf::from("2024/10/daily/file7.obs")))
+        Some((2024, 10, PathBuf::from("2024/010/daily/file7.obs")))
     );
 }
 #[test]
