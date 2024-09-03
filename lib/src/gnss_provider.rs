@@ -224,7 +224,7 @@ impl Iterator for DataIter {
                 let nav_data = self.nav_data_provider.sample(*y, *d, &sv, &epoch);
                 let mut result = vec![];
                 result.extend(data);
-                result.extend(nav_data.unwrap());
+                result.extend(nav_data.unwrap_or(vec![0.0; 20]));
                 Some(result)
             } else {
                 self.current = self.obs_provider_manager.next();
@@ -252,9 +252,11 @@ mod tests {
             data_iter.nth(0),
             Some(vec![
                 101.0,
+                2.000684961651786,
                 2919785.712,
                 -5383745.067,
                 1774604.692,
+                0.0,
                 23059848.224,
                 47.0,
                 121180380.096,
@@ -290,8 +292,6 @@ mod tests {
                 2563.094,
                 47.0,
                 45.967,
-                0.0,
-                0.0,
                 0.0,
                 0.0,
                 0.0,

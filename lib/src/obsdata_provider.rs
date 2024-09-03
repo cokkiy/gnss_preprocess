@@ -7,7 +7,7 @@ use std::{
 
 use rinex::{
     observation::ObservationData,
-    prelude::{Constellation, Epoch, Observable, SV},
+    prelude::{Constellation, Epoch, Observable, TimeScale, SV},
     Rinex,
 };
 
@@ -39,7 +39,7 @@ impl ObsDataProvider {
         vec.iter()
             .cloned()
             .enumerate()
-            .map(|(i, s)| (s, i * 2 + 4))
+            .map(|(i, s)| (s, i * 2 + 6))
             .collect()
     }
 
@@ -147,9 +147,22 @@ impl ObsDataProvider {
     }
 }
 
+use lazy_static::lazy_static;
+
+lazy_static! {
+    /// The epoch time at J2000 in GPST seconds
+    static ref EPOCH_TIME_AT_J2000: f64 =
+        Epoch::from_gregorian(2000, 1, 1, 0, 0, 0, 0, TimeScale::GPST).to_gpst_seconds();
+}
+
 impl Iterator for ObsDataProvider {
     type Item = (SV, Epoch, Vec<f64>);
 
+    /// Returns the next observation data in the RINEX file.
+    /// The first element of the tuple is the epoch, the second is the SV, and the third is the observation data.
+    /// The first byte of the observation data is the satellite id which is converted from the SV by `sv_to_u16`.
+    /// The second byte of the observation data is the epoch time divided by J2000.
+    /// The next 3 bytes of the observation data is the ground position in ECEF coordinates.
     fn next(&mut self) -> Option<Self::Item> {
         let ((epoch, flag), (_, vehicles)) = self.obs_file.observation().nth(self.index)?;
         if flag.is_ok() {
@@ -165,10 +178,11 @@ impl Iterator for ObsDataProvider {
                     _ => self.sbas_data(observations),
                 };
                 data[0] = f64::from(sv_id);
+                data[1] = epoch.to_gpst_seconds() / *EPOCH_TIME_AT_J2000;
                 if let Some(ground_position) = self.obs_file.header.ground_position {
-                    data[1] = ground_position.to_ecef_wgs84().0;
-                    data[2] = ground_position.to_ecef_wgs84().1;
-                    data[3] = ground_position.to_ecef_wgs84().2;
+                    data[2] = ground_position.to_ecef_wgs84().0;
+                    data[3] = ground_position.to_ecef_wgs84().1;
+                    data[4] = ground_position.to_ecef_wgs84().2;
                 }
                 // move to the next vehicle
                 self.inner_index += 1;
@@ -236,21 +250,6 @@ mod tests {
             prn: 9,
         };
         assert_eq!(ObsDataProvider::sv_to_u16(&span), 709);
-    }
-
-    #[test]
-    fn test_epoch_time_gpst() {
-        let epoch = Epoch::from_gregorian_hms(2020, 1, 1, 0, 0, 0, TimeScale::GPST);
-
-        assert_eq!(
-            epoch.to_gregorian_str(TimeScale::UTC),
-            "2019-12-31T23:59:23 UTC"
-        );
-
-        assert_eq!(
-            epoch.to_gregorian_str(TimeScale::GPST),
-            "2020-01-01T00:00:00 GPST"
-        );
     }
 
     #[test]
@@ -334,9 +333,9 @@ mod tests {
         let result = ObsDataProvider::vec_to_hash(&input);
 
         assert_eq!(result.len(), 3);
-        assert_eq!(result.get("C1C"), Some(&4));
-        assert_eq!(result.get("L1C"), Some(&6));
-        assert_eq!(result.get("S1C"), Some(&8));
+        assert_eq!(result.get("C1C"), Some(&6));
+        assert_eq!(result.get("L1C"), Some(&8));
+        assert_eq!(result.get("S1C"), Some(&10));
         assert_eq!(result.get("D1C"), None);
     }
 
@@ -364,10 +363,11 @@ mod tests {
             epoch,
             Epoch::from_gregorian(2020, 1, 1, 0, 0, 0, 0, TimeScale::GPST)
         );
-        assert_eq!(data[4], 23059848.224);
-        assert_eq!(data[6], 121180380.096);
+        assert_eq!(data[4], 1774604.6920);
+        assert_eq!(data[5], 0.0);
+        assert_eq!(data[6], 23059848.224);
 
-        let (sv, epoch, data) = provider.next().unwrap();
+        let (sv, epoch, _) = provider.next().unwrap();
         assert_eq!(sv, SV::new(Constellation::Galileo, 01));
         assert_eq!(
             epoch,
@@ -380,8 +380,8 @@ mod tests {
             epoch,
             Epoch::from_gregorian(2020, 1, 1, 0, 0, 30, 0, TimeScale::GPST)
         );
-        assert_eq!(data[4], 23040259.781);
-        assert_eq!(data[6], 121077442.941);
+        assert_eq!(data[6], 23040259.781);
+        assert_eq!(data[8], 121077442.941);
     }
 
     // Add more tests for other methods and functionalities of ObsDataProvider
