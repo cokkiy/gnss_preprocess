@@ -1,3 +1,4 @@
+use pyo3::prelude::*;
 use std::path::PathBuf;
 use std::thread;
 
@@ -9,6 +10,7 @@ use crate::ObsFileProvider;
 /// It reads GNSS observation data from the GNSS files path and provides interpolation for
 /// the GNSS navigation data for any valid time.
 #[allow(dead_code)]
+#[pyclass]
 pub struct GNSSDataProvider {
     gnss_data_path: String,
     training_data_files: ObsFileProvider,
@@ -16,31 +18,10 @@ pub struct GNSSDataProvider {
     nav_data_provider: NavDataProvider,
 }
 
-#[allow(dead_code)]
+#[pymethods]
 impl GNSSDataProvider {
-    /// Creates a new instance of `GNSSDataProvider`.
-    ///
-    /// # Arguments
-    ///
-    /// * `gnss_files_path` - The path to the GNSS files.
-    /// * `percent` - An optional percentage value (0-100) to set the percent field which used to
-    ///               split the data into training set and testing set. If not provided, the default value is 80.
-    ///
-    /// # Returns
-    ///
-    /// A new instance of `GNSSDataProvider`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use std::path::PathBuf;
-    /// use gnss_preprocess::GNSSDataProvider;
-    ///
-    /// let gnss_files_path = "/path/to/gnss/files";
-    /// let percent = Some(90);
-    ///
-    /// let provider = GNSSDataProvider::new(gnss_files_path, percent);
-    /// ```
+    #[new]
+    #[pyo3(signature = (gnss_files_path, percent=None))]
     pub fn new(gnss_files_path: &str, percent: Option<u8>) -> Self {
         let obs_data_provider = ObsFileProvider::new(
             PathBuf::from(gnss_files_path)
@@ -177,11 +158,13 @@ impl ObsDataProviderManager {
 }
 
 /// The `DataIter` struct is an iterator over the GNSS data.
+#[pyclass]
 pub struct DataIter {
     obs_provider_manager: ObsDataProviderManager,
     nav_data_provider: NavDataProvider,
     current: Option<(u16, u16, ObsDataProvider)>,
 }
+
 impl DataIter {
     /// Creates a new `DataIter`.
     ///
@@ -200,6 +183,17 @@ impl DataIter {
             nav_data_provider,
             current: None,
         }
+    }
+}
+
+#[pymethods]
+impl DataIter {
+    fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    fn __next__(mut slf: PyRefMut<'_, Self>) -> Option<Vec<f64>> {
+        slf.next()
     }
 }
 
@@ -237,180 +231,4 @@ impl Iterator for DataIter {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_data_iter() {
-        let mut data_iter = DataIter::new(
-            "/mnt/d/GNSS_Data/Data".to_string(),
-            ObsFileProvider::new("/mnt/d/GNSS_Data/Data/Obs"),
-            NavDataProvider::new("/mnt/d/GNSS_Data/Data/Nav"),
-        );
-        //assert_eq!(data_iter.nth(0).unwrap().len(), 150);
-        assert_eq!(
-            data_iter.nth(0),
-            Some(vec![
-                101.0,
-                2.000684961651786,
-                2919785.712,
-                -5383745.067,
-                1774604.692,
-                0.0,
-                23059848.224,
-                47.0,
-                121180380.096,
-                47.0,
-                3432.329,
-                47.0,
-                42.762,
-                0.0,
-                23059848.122,
-                29.0,
-                29.602,
-                0.0,
-                23059848.595,
-                29.0,
-                94426307.361,
-                29.0,
-                2674.532,
-                29.0,
-                29.602,
-                0.0,
-                23059849.17,
-                41.0,
-                94426311.371,
-                41.0,
-                2674.666,
-                41.0,
-                41.08,
-                0.0,
-                23059848.308,
-                47.0,
-                90491887.961,
-                47.0,
-                2563.094,
-                47.0,
-                45.967,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                -0.0002479013055563,
-                -1.216449163621e-11,
-                0.0,
-                72.0,
-                -19.5625,
-                4.218032840856e-9,
-                -1.48380470489,
-                -9.573996067047e-7,
-                0.009235781384632,
-                3.913417458534e-6,
-                5153.638690948,
-                259200.0,
-                2.067536115646e-7,
-                -0.5786517456821,
-                -1.005828380585e-7,
-                0.9785100924501,
-                313.59375,
-                0.7594713900033,
-                -8.066050269084e-9,
-                0.0
-            ])
-        );
-    }
-
-    #[test]
-    fn test_train_iter() {
-        let mut gnss_data_provider = GNSSDataProvider::new("/mnt/d/GNSS_Data/Data", None);
-        let mut iter = gnss_data_provider.train_iter();
-        assert_eq!(iter.next().unwrap()[148], -8.066050269084e-9);
-        //assert_eq!(iter.next().unwrap()[0], 101_f64);
-        assert_eq!(iter.next().unwrap()[148], -5.396653363703E-09);
-    }
-}
+mod tests;

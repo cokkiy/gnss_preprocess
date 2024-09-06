@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["lib", "tools/tna_collect"]
+members = ["lib"]
 
 
 [workspace.metadata.scripts]

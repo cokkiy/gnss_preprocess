@@ -3,16 +3,22 @@ name = "gnss_preprocess"
 version = "0.1.0"
 edition = "2021"
 
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "gnss_preprocess"
+crate-type = ["cdylib"]
+
 [dependencies]
-rinex = "0.16"
-chrono = "0.4"
-cubic_spline = "1.0.0"
-splines = "4.3"
-once_cell = "1.19"
+gnss-rs = "=2.1.3"
+hifitime = "=3.9.0"
+rinex = "0.16.1"
 lazy_static = "1.5"
+pyo3 = "0.22.0"
+splines = "4.3.0"
 
 [dev-dependencies]
 rstest = "0.22"
+
 
 [package.metadata.scripts]
 run = "cargo run"
