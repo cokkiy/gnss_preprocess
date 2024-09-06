@@ -57,6 +57,28 @@ impl GNSSDataProvider {
         )
     }
 
+    /// Get the training data batch iterator.
+    ///
+    /// This function returns a batch iterator over the training data.
+    /// It uses the current GNSS data path, training data files, and navigation data provider
+    /// to create a `DataIter`, which is then wrapped in a `BatchDataIter`.
+    ///
+    /// # Arguments
+    ///
+    /// * `batch_size` - The number of items to include in each batch.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `BatchDataIter` over the training data.
+    pub fn train_batch_iter(&mut self, batch_size: usize) -> BatchDataIter {
+        let iter = DataIter::new(
+            self.gnss_data_path.clone(),
+            self.training_data_files.clone(),
+            self.nav_data_provider.clone(),
+        );
+        BatchDataIter::new(iter, batch_size)
+    }
+
     /// Get the testing data iterator.
     ///
     /// This function returns an iterator over the testing data.
@@ -71,6 +93,28 @@ impl GNSSDataProvider {
             self.testing_data_files.clone(),
             self.nav_data_provider.clone(),
         )
+    }
+
+    /// Get the testing data batch iterator.
+    ///
+    /// This function returns a batch iterator over the testing data.
+    /// It uses the current GNSS data path, testing data files, and navigation data provider
+    /// to create a `DataIter`, which is then wrapped in a `BatchDataIter`.
+    ///
+    /// # Arguments
+    ///
+    /// * `batch_size` - The number of items to include in each batch.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `BatchDataIter` over the testing data.
+    pub fn test_batch_iter(&mut self, batch_size: usize) -> BatchDataIter {
+        let iter = DataIter::new(
+            self.gnss_data_path.clone(),
+            self.testing_data_files.clone(),
+            self.nav_data_provider.clone(),
+        );
+        BatchDataIter::new(iter, batch_size)
     }
 }
 
@@ -230,5 +274,74 @@ impl Iterator for DataIter {
     }
 }
 
+/// The `BatchDataIter` struct is an iterator over the GNSS data.
+/// It returns a batch of data from the `DataIter`.
+#[allow(dead_code)]
+#[pyclass]
+pub struct BatchDataIter {
+    data_iter: DataIter,
+    batch_size: usize,
+}
+
+#[allow(dead_code)]
+impl BatchDataIter {
+    /// Creates a new `BatchDataIter`.
+    ///
+    /// # Arguments
+    ///
+    /// * `data_iter` - The data iterator.
+    /// * `batch_size` - The batch size.
+    fn new(data_iter: DataIter, batch_size: usize) -> Self {
+        Self {
+            data_iter,
+            batch_size,
+        }
+    }
+}
+
+#[pymethods]
+impl BatchDataIter {
+    /// Get the next item in the iterator.
+    ///
+    /// This function returns the next item in the iterator.
+    /// It updates the current year and day, and loads the next provider if necessary.
+    ///
+    /// # Returns
+    ///
+    /// Returns the next item in the iterator.
+    /// If there are no more items, it returns `None`.
+    fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    /// Get the next item in the iterator.
+    ///
+    /// This function returns the next item in the iterator.
+    /// It updates the current year and day, and loads the next provider if necessary.
+    ///
+    /// # Returns
+    ///
+    /// Returns the next item in the iterator.
+    /// If there are no more items, it returns `None`.
+    fn __next__(mut slf: PyRefMut<'_, Self>) -> Option<Vec<Vec<f64>>> {
+        slf.next()
+    }
+}
+
+impl Iterator for BatchDataIter {
+    type Item = Vec<Vec<f64>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut batch = Vec::new();
+        for _ in 0..self.batch_size {
+            if let Some(data) = self.data_iter.next() {
+                batch.push(data);
+            } else {
+                return Some(batch);
+            }
+        }
+        Some(batch)
+    }
+}
 #[cfg(test)]
 mod tests;
