@@ -3,6 +3,7 @@ use std::{collections::HashMap, path::PathBuf};
 use rinex::prelude::{Constellation, Epoch, SV};
 
 use crate::{
+    common::get_next_day,
     constellation_keys::CONSTELLATION_KEYS,
     navdata_interpolation::{NavDataInterpolation, SampleResult},
     navigation_data::{
@@ -223,30 +224,11 @@ fn convert_results(
     Some(results)
 }
 
-fn get_next_day(year: u16, day_of_year: u16) -> (u16, u16) {
-    if is_leap_year(year) {
-        if day_of_year == 366 {
-            return (year + 1, 1);
-        }
-    } else if day_of_year == 365 {
-        return (year + 1, 1);
-    }
-    (year, day_of_year + 1)
-}
-
-/// Determines if a given year is a leap year. If the year is two digital,
-/// it is converted to a four digital year by add 2000.
-fn is_leap_year(year: u16) -> bool {
-    let mut year = year;
-    if year < 100 {
-        year += 2000;
-    }
-    year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
-}
-
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
+
+    use crate::common::{get_next_day, is_leap_year};
 
     use super::*;
     use rinex::prelude::{Constellation, TimeScale};

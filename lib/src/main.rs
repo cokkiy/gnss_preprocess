@@ -1,8 +1,8 @@
+mod common;
 mod constellation_keys;
 mod navdata_interpolation;
 mod navdata_provider;
 mod navigation_data;
-
 use gnss_preprocess::GNSSDataProvider;
 use std::error::Error;
 
