@@ -3,6 +3,8 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+use crate::common::get_next_day;
+
 /// The `ObsFilesInDay` struct contains the day of year and a list of observation file names
 /// which observed in that day.
 /// It also provides an iterator to iterate over the observation file paths.
