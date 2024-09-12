@@ -1,3 +1,6 @@
+use gnss_rs::sv::SV;
+use rinex::prelude::Constellation;
+
 /// Returns the next day given a year and the day of the year.
 ///
 /// # Arguments
@@ -45,4 +48,84 @@ pub fn is_leap_year(year: u16) -> bool {
         year += 2000;
     }
     year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
+}
+
+/// Converts the satellite vehicle (SV) constellation type to a corresponding `u16` value.
+///
+/// The mapping is as follows:
+/// - `Constellation::GPS` => 1
+/// - `Constellation::Glonass` => 2
+/// - `Constellation::Galileo` => 3
+/// - `Constellation::BeiDou` => 4
+/// - `Constellation::QZSS` => 5
+/// - `Constellation::IRNSS` => 6
+/// - Any other constellation type => 7
+///
+/// # Arguments
+///
+/// * `sv` - A reference to a satellite vehicle (SV) which contains the constellation type.
+///
+/// # Returns
+///
+/// A `u16` value representing the constellation type.
+pub fn sv_to_u16(sv: &SV) -> u16 {
+    let leading: u16 = match sv.constellation {
+        Constellation::GPS => 1,
+        Constellation::Glonass => 2,
+        Constellation::Galileo => 3,
+        Constellation::BeiDou => 4,
+        Constellation::QZSS => 5,
+        Constellation::IRNSS => 6,
+        _ => 7,
+    };
+    leading * 100 + sv.prn as u16
+}
+
+#[cfg(test)]
+mod tests {
+    use gnss_rs::sv::SV;
+    use rinex::prelude::Constellation;
+
+    use crate::common::sv_to_u16;
+
+    #[test]
+    fn test_sv_to_u16() {
+        let sv_gps = SV {
+            constellation: Constellation::GPS,
+            prn: 1,
+        };
+        assert_eq!(sv_to_u16(&sv_gps), 101);
+
+        let sv_galileo = SV {
+            constellation: Constellation::Galileo,
+            prn: 2,
+        };
+        assert_eq!(sv_to_u16(&sv_galileo), 302);
+
+        // Add more test cases for other constellations
+        let sv_nsas = SV {
+            constellation: Constellation::NSAS,
+            prn: 24,
+        };
+
+        assert_eq!(sv_to_u16(&sv_nsas), 724);
+
+        let sv_compass = SV {
+            constellation: Constellation::BeiDou,
+            prn: 28,
+        };
+        assert_eq!(sv_to_u16(&sv_compass), 428);
+
+        let sv_irnss = SV {
+            constellation: Constellation::IRNSS,
+            prn: 7,
+        };
+        assert_eq!(sv_to_u16(&sv_irnss), 607);
+
+        let span = SV {
+            constellation: Constellation::SPAN,
+            prn: 9,
+        };
+        assert_eq!(sv_to_u16(&span), 709);
+    }
 }

@@ -11,9 +11,12 @@ use rinex::{
     Rinex,
 };
 
-use crate::tna_fields::{
+use crate::{
+    common::sv_to_u16,
+    tna_fields::{
     BEIDOU_FIELDS, GALILEO_FIELDS, GLONASS_FIELDS, GPS_FIELDS, IRNSS_FIELDS, MAX_FIELDS_COUNT,
     QZSS_FIELDS, SBAS_FIELDS,
+    },
 };
 
 /// Maximum number of fields in a RINEX observation record
@@ -33,6 +36,7 @@ pub(crate) struct ObsDataProvider {
     sbas_fields: HashMap<&'static str, usize>,
 }
 
+#[allow(dead_code)]
 impl ObsDataProvider {
     /// Converts a vector of strings to a hash map which maps the string to its index*2+4 in the vector.
     fn vec_to_hash(vec: &Vec<&'static str>) -> HashMap<&'static str, usize> {
@@ -65,17 +69,27 @@ impl ObsDataProvider {
         })
     }
 
-    fn sv_to_u16(sv: &SV) -> u16 {
-        let leading: u16 = match sv.constellation {
-            Constellation::GPS => 1,
-            Constellation::Glonass => 2,
-            Constellation::Galileo => 3,
-            Constellation::BeiDou => 4,
-            Constellation::QZSS => 5,
-            Constellation::IRNSS => 6,
-            _ => 7,
-        };
-        leading * 100 + sv.prn as u16
+    /// Retrieves all space vehicles (SV) from the observation file.
+    ///
+    /// # Returns
+    ///
+    /// A vector containing all the space vehicles (SV) present in the observation file.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let obs_data_provider = ObsDataProvider::new(filename).unwrap();
+    /// let all_sv = obs_data_provider.get_all_sv();
+    /// for sv in all_sv {
+    ///     println!("{:?}", sv);
+    /// }
+    /// ```
+    pub(crate) fn get_all_sv(&self) -> Vec<SV> {
+        self.obs_file
+            .observation()
+            .map(|((_, _), (_, vehicles))| vehicles.keys().cloned())
+            .flatten()
+            .collect()
     }
 
     #[inline]
@@ -167,7 +181,7 @@ impl Iterator for ObsDataProvider {
         let ((epoch, flag), (_, vehicles)) = self.obs_file.observation().nth(self.index)?;
         if flag.is_ok() {
             if let Some((sv, observations)) = vehicles.iter().nth(self.inner_index) {
-                let sv_id = Self::sv_to_u16(sv);
+                let sv_id = sv_to_u16(sv);
                 let mut data = match sv.constellation {
                     Constellation::GPS => self.gps_data(observations),
                     Constellation::Glonass => self.glonass_data(observations),
