@@ -1,5 +1,5 @@
 use gnss_rs::sv::SV;
-use rinex::prelude::Constellation;
+use rinex::prelude::{Constellation, Observable};
 
 /// Returns the next day given a year and the day of the year.
 ///
@@ -81,12 +81,46 @@ pub fn sv_to_u16(sv: &SV) -> u16 {
     leading * 100 + sv.prn as u16
 }
 
+/// Returns the name of the observable field.
+///
+/// # Arguments
+///
+/// * `observable` - An observable type.
+///
+/// # Returns
+///
+/// An optional string slice containing the name of the observable field. If the observable
+/// type is one of phase, doppler, ssi or pseudo range, return the name, else `None` is returned.
+
+#[inline]
+pub fn get_observable_field_name(observable: &Observable) -> Option<&str> {
+    match observable {
+        Observable::Phase(name) => Some(name),
+        Observable::Doppler(name) => Some(name),
+        Observable::SSI(name) => Some(name),
+        Observable::PseudoRange(name) => Some(name),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use gnss_rs::sv::SV;
-    use rinex::prelude::Constellation;
+    use rinex::prelude::{Constellation, Observable};
 
-    use crate::common::sv_to_u16;
+    use crate::common::{get_observable_field_name, sv_to_u16};
+
+    #[test]
+    fn test_get_observable_field_name() {
+        assert_eq!(
+            get_observable_field_name(&Observable::PseudoRange("C1C".to_string())),
+            Some("C1C")
+        );
+        assert_eq!(
+            get_observable_field_name(&Observable::Phase("L1C".to_string())),
+            Some("L1C")
+        );
+    }
 
     #[test]
     fn test_sv_to_u16() {

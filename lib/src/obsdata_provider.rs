@@ -12,7 +12,7 @@ use rinex::{
 };
 
 use crate::{
-    common::sv_to_u16,
+    common::{get_observable_field_name, sv_to_u16},
     tna_fields::{
         BEIDOU_FIELDS, GALILEO_FIELDS, GLONASS_FIELDS, GPS_FIELDS, IRNSS_FIELDS, MAX_FIELDS_COUNT,
         QZSS_FIELDS, SBAS_FIELDS,
@@ -113,7 +113,7 @@ impl ObsDataProvider {
         let mut data = vec![0.0; DATA_VEC_SIZE];
         // implementation of the gps_data method
         for (observable, observation_data) in observations {
-            let field_name = Self::get_observable_field_name(observable);
+            let field_name = get_observable_field_name(observable);
             if let Some(field_name) = field_name {
                 if let Some(index) = fields.get(field_name) {
                     data[*index] = observation_data.obs;
