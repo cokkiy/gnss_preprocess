@@ -12,5 +12,4 @@ quote = "1.0"
 rinex = { version = "0.16.1", optional = true }
 
 [features]
-default = ["gnss"]
 gnss = ["rinex"]
