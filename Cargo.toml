@@ -1,6 +1,12 @@
 [workspace]
 resolver = "2"
-members = ["lib", "tools/tna_collect"]
+members = [
+  "lib",
+  "tools/extractor",
+  "tools/tna_collect",
+  "tools/extractor",
+  "convert_macro",
+]
 
 
 [workspace.metadata.scripts]
@@ -8,7 +14,9 @@ check = "cargo check"
 build-all = "cargo build"
 build-lib = "cargo build --lib"
 build-tna = "cargo build --bin tna_collect"
+build-extractor = "cargo build --bin extractor"
 build-example = "cargo build --examples"
 release = "cargo build --release"
 test = "cargo test"
 run-tna_collect = "cargo run --bin tna_collect"
+run-extractor = "cargo run --bin extractor"

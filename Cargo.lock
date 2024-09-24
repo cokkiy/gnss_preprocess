@@ -39,6 +39,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
+name = "convert_macro"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "rinex",
+ "syn",
+]
+
+[[package]]
 name = "csv"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -70,6 +79,13 @@ name = "equivalent"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
+
+[[package]]
+name = "extractor"
+version = "0.1.0"
+dependencies = [
+ "gnss_preprocess",
+]
 
 [[package]]
 name = "futures"
@@ -189,8 +205,10 @@ dependencies = [
 name = "gnss_preprocess"
 version = "0.1.0"
 dependencies = [
+ "convert_macro",
  "gnss-rs",
  "hifitime",
+ "itertools 0.13.0",
  "lazy_static",
  "pyo3",
  "rinex",
@@ -246,6 +264,15 @@ name = "itertools"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
+dependencies = [
+ "either",
+]
+
+[[package]]
+name = "itertools"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
 dependencies = [
  "either",
 ]
@@ -594,7 +621,7 @@ dependencies = [
  "bitflags",
  "gnss-rs",
  "hifitime",
- "itertools",
+ "itertools 0.12.1",
  "lazy_static",
  "map_3d",
  "num",
