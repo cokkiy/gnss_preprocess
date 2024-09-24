@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 name = "gnss_preprocess"
-crate-type = ["cdylib","rlib"]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 gnss-rs = "=2.1.3"
@@ -15,6 +15,8 @@ rinex = "0.16.1"
 lazy_static = "1.5"
 pyo3 = { version = "0.22.0", features = ["extension-module"] }
 splines = "4.3.0"
+itertools = "0.13.0"
+convert_macro = { path = "../convert_macro", features = ["gnss"] }
 
 [dev-dependencies]
 rstest = "0.22"
