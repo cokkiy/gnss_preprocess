@@ -1,6 +1,6 @@
-use convert_macro::{FieldsPos, FromGnss, FromSlice, FromVec, ToSlice, ToVec};
+use convert_macro::{FieldsPos, FromGnss, FromSlice, FromVec, ToSlice, ToVec, SSC};
 
-#[derive(Clone, Debug, Default, FieldsPos, ToSlice, FromSlice, ToVec, FromVec, FromGnss)]
+#[derive(Clone, Debug, Default, FieldsPos, ToSlice, FromSlice, ToVec, FromVec, FromGnss, SSC)]
 pub struct GalileoData {
     c1b: f64,
     c1c: f64,
