@@ -743,6 +743,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "228c4551e53c672e86439509545dd7ffcb966b6876c58b108e433a30e6117101"
 
 [[package]]
+name = "ssc"
+version = "0.1.0"
+
+[[package]]
 name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

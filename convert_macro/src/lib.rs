@@ -431,3 +431,77 @@ pub fn derive_from_hashmap(input: TokenStream) -> TokenStream {
 
     TokenStream::from(expanded)
 }
+
+/// ## `SSC`
+/// This macro can be derived for structs with named fields. It generates an implementation
+/// of the `SignalStrengthComparer` trait to compare the signal strength of two structs.
+/// ### Example
+/// ```rust
+/// use convert_macro::SSC;
+/// use ssc::SignalStrengthComparer;
+/// #[derive(SSC)]
+/// struct TestStruct {
+///     c1c: f64,
+///     c1l: f64,
+///     s1c: f64,
+///     s1l: f64,
+///     s1p: f64,
+///     }
+/// let test1 = TestStruct {
+///     c1c: 1.0,
+///     c1l: 3.0,
+///     s1c: 2.0,
+///     s1l: 4.0,
+///     s1p: 5.0,
+///     };
+/// let test2 = TestStruct {
+///     c1c: 2.0,
+///     c1l: 4.0,
+///     s1c: 3.0,
+///     s1l: 5.0,
+///     s1p: 6.0,
+///     };
+/// let result = test1.ss_compare(&test2);
+/// assert_eq!(result, vec![1.0, 1.0, 1.0, 1.0, 1.0]);
+/// ```
+/// ## Note
+/// The `SSC` macro in feature "gnss-ssc".
+#[cfg(feature = "gnss-ssc")]
+#[proc_macro_derive(SSC)]
+pub fn derive_ssc(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    let name = &input.ident;
+    let fields = match input.data {
+        Data::Struct(DataStruct {
+            fields: Fields::Named(FieldsNamed { named, .. }),
+            ..
+        }) => named,
+        _ => {
+            return TokenStream::from(quote! {
+                compile_error!("This macro can only be derived for structs with named fields");
+            });
+        }
+    };
+
+    let field_idents: Vec<_> = fields
+        .iter()
+        .filter(|f| f.ident.as_ref().unwrap().to_string().starts_with("s"))
+        .map(|f| f.ident.as_ref().unwrap())
+        .collect();
+    let len = field_idents.len();
+    let expanded = quote! {
+
+        impl ssc::SignalStrengthComparer for #name {
+            fn ss_compare(&self, other: &Self) -> Vec<f64> {
+                let mut result = Vec::with_capacity(#len);
+                #(
+                    result.push((self.#field_idents - other.#field_idents).round() as f64);
+                )*
+
+                result
+            }
+        }
+    };
+
+    TokenStream::from(expanded)
+}
