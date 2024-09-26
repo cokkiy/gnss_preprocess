@@ -5,7 +5,7 @@ members = [
   "tools/extractor",
   "tools/tna_collect",
   "tools/extractor",
-  "convert_macro",
+  "convert_macro", "ssc",
 ]
 
 
