@@ -5,6 +5,7 @@ mod constellation_keys;
 mod galileo_data;
 mod glonass_data;
 mod gnss_data;
+mod gnss_epoch_data;
 mod gnss_provider;
 mod gps_data;
 mod irnss_data;
