@@ -368,6 +368,49 @@ impl ObsFilesTree {
         self.items.iter().flat_map(|item| item.iter_paths())
     }
 
+    /// Finds the next observation file with the specified name, year and day of the year.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the observation file.
+    /// * `year` - The year of the observation file.
+    /// * `day_of_year` - The day of the year of the observation file.
+    ///
+    /// # Returns
+    ///
+    /// The path of the next observation file with the specified name, year and day of the year.
+    ///
+    pub(crate) fn find_next_file(
+        &self,
+        name: &str,
+        year: u16,
+        day_of_year: u16,
+    ) -> Option<PathBuf> {
+        let next_day = get_next_day(year, day_of_year);
+        self.items.iter().find_map(|item| {
+            if item.year == next_day.0 {
+                item.obs_file_items.iter().find_map(|obs_item| {
+                    if obs_item.day_of_year == next_day.1 {
+                        obs_item
+                            .obs_files
+                            .iter()
+                            .find(|file_name| file_name.starts_with(name))
+                            .map(|file_name| {
+                                PathBuf::from(format!("{}", next_day.0))
+                                    .join(format!("{:03}", next_day.1))
+                                    .join("daily")
+                                    .join(file_name)
+                            })
+                    } else {
+                        None
+                    }
+                })
+            } else {
+                None
+            }
+        })
+    }
+
     /// Splits the `ObsFilesTree` into two parts based on the given percentage
     /// which counts the number in days not in files.
     ///

@@ -93,18 +93,6 @@ fn test_vec_to_hash() {
 }
 
 #[test]
-fn test_get_observable_field_name() {
-    assert_eq!(
-        ObsDataProvider::get_observable_field_name(&Observable::PseudoRange("C1C".to_string())),
-        Some("C1C")
-    );
-    assert_eq!(
-        ObsDataProvider::get_observable_field_name(&Observable::Phase("L1C".to_string())),
-        Some("L1C")
-    );
-}
-
-#[test]
 fn test_next() {
     let provider = ObsDataProvider::new(PathBuf::from(
         "/mnt/d/GNSS_Data/Data/Obs/2020/001/daily/abmf0010.20o",
@@ -137,4 +125,14 @@ fn test_next() {
     assert_eq!(data[8], 121077442.941);
 }
 
-// Add more tests for other methods and functionalities of ObsDataProvider
+#[test]
+fn test_get_all_sv() {
+    let provider = ObsDataProvider::new(PathBuf::from(
+        "/mnt/d/GNSS_Data/Data/Obs/2020/001/daily/abmf0010.20o",
+    ));
+    let provider = provider.unwrap();
+    let all_sv = provider.get_all_sv();
+    assert_eq!(all_sv.len(), 100);
+    assert_eq!(all_sv[0], SV::new(Constellation::GPS, 1));
+    assert_eq!(all_sv[1], SV::new(Constellation::Galileo, 01));
+}

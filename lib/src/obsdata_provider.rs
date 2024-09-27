@@ -1,9 +1,10 @@
+use itertools::Itertools;
 use std::{
     collections::HashMap,
     io::{Error, ErrorKind},
     path::PathBuf,
     vec,
-};
+}; // Import the Itertools trait to use the distinct method
 
 use rinex::{
     observation::ObservationData,
@@ -69,7 +70,7 @@ impl ObsDataProvider {
         })
     }
 
-    /// Retrieves all space vehicles (SV) from the observation file.
+    /// Retrieves all unique space vehicles (SV) from the observation file.
     ///
     /// # Returns
     ///
@@ -89,19 +90,35 @@ impl ObsDataProvider {
             .observation()
             .map(|((_, _), (_, vehicles))| vehicles.keys().cloned())
             .flatten()
+            .unique()
             .collect()
     }
 
-    #[inline]
-    fn get_observable_field_name(observable: &Observable) -> Option<&str> {
-        match observable {
-            Observable::Phase(name) => Some(name),
-            Observable::Doppler(name) => Some(name),
-            Observable::SSI(name) => Some(name),
-            Observable::PseudoRange(name) => Some(name),
-            Observable::ChannelNumber(name) => Some(name),
-            _ => None,
-        }
+    pub(crate) fn get_sv_data(&self, sv: &SV) -> Vec<Vec<f64>> {
+        self.obs_file
+            .observation()
+            .filter_map(|((_, _), (_, vehicles))| {
+                vehicles.get(sv).map(|observations| {
+                    let mut data = match sv.constellation {
+                        Constellation::GPS => self.gps_data(observations),
+                        Constellation::Glonass => self.glonass_data(observations),
+                        Constellation::Galileo => self.galileo_data(observations),
+                        Constellation::BeiDou => self.beidou_data(observations),
+                        Constellation::QZSS => self.qzss_data(observations),
+                        Constellation::IRNSS => self.irnss_data(observations),
+                        _ => self.sbas_data(observations),
+                    };
+                    data[0] = f64::from(sv_to_u16(sv));
+                    data[1] = 0.0;
+                    if let Some(ground_position) = self.obs_file.header.ground_position {
+                        data[2] = ground_position.to_ecef_wgs84().0;
+                        data[3] = ground_position.to_ecef_wgs84().1;
+                        data[4] = ground_position.to_ecef_wgs84().2;
+                    }
+                    data
+                })
+            })
+            .collect()
     }
 
     /// Converts the observation data to a vector of f64 values.
@@ -182,7 +199,7 @@ impl Iterator for ObsDataProvider {
         if flag.is_ok() {
             if let Some((sv, observations)) = vehicles.iter().nth(self.inner_index) {
                 let sv_id = sv_to_u16(sv);
-                let mut data = match sv.constellation {
+                let mut data: Vec<f64> = match sv.constellation {
                     Constellation::GPS => self.gps_data(observations),
                     Constellation::Glonass => self.glonass_data(observations),
                     Constellation::Galileo => self.galileo_data(observations),
