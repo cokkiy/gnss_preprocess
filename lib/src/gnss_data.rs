@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use rinex::{observation::ObservationData, prelude::Observable};
+use ssc::SignalStrengthComparer;
 
 use crate::{
     beidou_data::BeidouData, galileo_data::GalileoData, glonass_data::GlonassData,
@@ -8,6 +9,7 @@ use crate::{
 };
 
 /// Gnss data structure
+#[derive(Clone, Debug)]
 pub enum GnssData {
     /// GPS data
     GPSData(GPSData),
@@ -152,6 +154,62 @@ impl From<IRNSSData> for GnssData {
     /// Convert IRNSSData to GnssData
     fn from(value: IRNSSData) -> Self {
         GnssData::IRNSSData(value)
+    }
+}
+
+impl SignalStrengthComparer for GnssData {
+    fn ss_compare(&self, other: &Self) -> Vec<f64> {
+        match self {
+            GnssData::GPSData(data) => {
+                if let GnssData::GPSData(other_data) = other {
+                    data.ss_compare(other_data)
+                } else {
+                    vec![]
+                }
+            }
+            GnssData::GlonassData(data) => {
+                if let GnssData::GlonassData(other_data) = other {
+                    data.ss_compare(other_data)
+                } else {
+                    vec![]
+                }
+            }
+            GnssData::GalileoData(data) => {
+                if let GnssData::GalileoData(other_data) = other {
+                    data.ss_compare(other_data)
+                } else {
+                    vec![]
+                }
+            }
+            GnssData::SBASData(data) => {
+                if let GnssData::SBASData(other_data) = other {
+                    data.ss_compare(other_data)
+                } else {
+                    vec![]
+                }
+            }
+            GnssData::QZSSData(data) => {
+                if let GnssData::QZSSData(other_data) = other {
+                    data.ss_compare(other_data)
+                } else {
+                    vec![]
+                }
+            }
+            GnssData::BeidouData(data) => {
+                if let GnssData::BeidouData(other_data) = other {
+                    data.ss_compare(other_data)
+                } else {
+                    vec![]
+                }
+            }
+            GnssData::IRNSSData(data) => {
+                if let GnssData::IRNSSData(other_data) = other {
+                    data.ss_compare(other_data)
+                } else {
+                    vec![]
+                }
+            }
+        }
     }
 }
 
