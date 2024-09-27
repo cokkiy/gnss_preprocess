@@ -121,7 +121,10 @@ fn build_obs_tree(obs_files_path: &str) -> ObsFilesTree {
                                 .file_name()
                                 .to_string_lossy()
                                 .parse::<u16>()
-                                .unwrap();
+                                .expect(
+                                    format!("Failed to parse day of year: {:?}", day_entry)
+                                        .as_str(),
+                                );
                             let mut obs_files_in_days = Vec::new();
                             if let Ok(files) = std::fs::read_dir(day_entry.path().join("daily")) {
                                 files.map(|file| file.unwrap()).for_each(|file| {
