@@ -15,42 +15,52 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let path = PathBuf::from(&obs_path).join(file);
         //let obs_file = Rinex::from_file(path.to_str().ok_or("Invalid UTF-8 path")?)?;
         let fullpath = path.to_string_lossy().to_string();
+        print!("Starting processing: {} \t\t", fullpath);
 
         // create buffered reader
-        let mut reader = BufferedReader::new(&fullpath)?;
-        // Parse header fields
-        let header = Header::new(&mut reader)?;
-        if let Some(obs) = header.obs {
-            for (c, v) in obs.codes.iter() {
-                let codes = constellation_codes
-                    .entry(c.clone())
-                    .or_insert_with(Vec::new);
-                for code in v.iter() {
-                    match code {
-                        rinex::prelude::Observable::Phase(_)
-                        | rinex::prelude::Observable::Doppler(_)
-                        | rinex::prelude::Observable::SSI(_)
-                        | rinex::prelude::Observable::PseudoRange(_)
-                        | rinex::prelude::Observable::ChannelNumber(_) => {
-                            let code_string = code.to_string();
-                            if !codes.contains(&code_string) {
-                                //println!("{}: {} added", c, code_string);
-                                codes.push(code_string);
+        if let Ok(mut reader) = BufferedReader::new(&fullpath) {
+            // Parse header fields
+            if let Ok(header) = Header::new(&mut reader) {
+                if let Some(obs) = header.obs {
+                    for (c, v) in obs.codes.iter() {
+                        let codes = constellation_codes
+                            .entry(c.clone())
+                            .or_insert_with(Vec::new);
+                        for code in v.iter() {
+                            match code {
+                                rinex::prelude::Observable::Phase(_)
+                                | rinex::prelude::Observable::Doppler(_)
+                                | rinex::prelude::Observable::SSI(_)
+                                | rinex::prelude::Observable::PseudoRange(_)
+                                | rinex::prelude::Observable::ChannelNumber(_) => {
+                                    let code_string = code.to_string();
+                                    if !codes.contains(&code_string) {
+                                        //println!("{}: {} added", c, code_string);
+                                        codes.push(code_string);
+                                    }
+                                }
+                                _ => {}
                             }
                         }
-                        _ => {}
                     }
+                } else {
+                    println!("Not a valid obs file: {}", path.to_str().unwrap());
                 }
             }
+        } else {
+            println!("Failed to open file: {}", path.to_str().unwrap());
         }
+
         count += 1;
         println!(
-            "{}/{} {} processed. ",
+            "{}/{} {:.2}% {} processed. ",
             count,
             total_count,
+            (count as f64 / total_count as f64) * 100.0,
             path.to_str().unwrap()
         );
     }
+
     // write to file
     let mut writer = csv::Writer::from_path("constellation_codes.csv")?;
     writer.write_record(&["Constellation", "Codes"])?;
