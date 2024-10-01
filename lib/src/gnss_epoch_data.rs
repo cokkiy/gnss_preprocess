@@ -2,14 +2,20 @@ use hifitime::{Duration, Epoch};
 
 use crate::GnssData;
 
+/// A struct that represents the station coordinates.
+#[derive(Clone, Copy, Debug)]
+pub struct Station(f64, f64, f64);
+
 /// A struct that represents the GNSS epoch data.
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct GnssEpochData {
     /// The epoch of the GNSS data.
-    pub epoch: Epoch,
+    epoch: Epoch,
     /// The GNSS data in the epoch.
-    pub data: Vec<GnssData>,
+    data: Vec<GnssData>,
+    /// The station coordinates.
+    station: Station,
 }
 
 #[allow(dead_code)]
@@ -19,13 +25,18 @@ impl GnssEpochData {
     /// # Arguments
     ///
     /// * `epoch` - The epoch of the GNSS data.
+    /// * `station` - The station coordinates.
     /// * `data` - The GNSS data in the epoch.
     ///
     /// # Returns
     ///
     /// A new `GnssEpochData` instance.
-    pub fn new(epoch: Epoch, data: Vec<GnssData>) -> Self {
-        Self { epoch, data }
+    pub fn new(epoch: Epoch, station: Station, data: Vec<GnssData>) -> Self {
+        Self {
+            epoch,
+            data,
+            station,
+        }
     }
 
     /// Retrieves the epoch of the GNSS data.
@@ -46,6 +57,13 @@ impl GnssEpochData {
         self.data.clone()
     }
 
+    /// Retrieves the station coordinates.
+    /// # Returns
+    /// The station coordinates.
+    pub fn get_station(&self) -> Station {
+        self.station
+    }
+
     /// Retrieves the time gap between the current epoch and the other epoch.
     pub fn time_gap(&self, other: &GnssEpochData) -> Duration {
         self.epoch - other.epoch
@@ -56,7 +74,7 @@ impl GnssEpochData {
     /// An iterator over the GNSS data in the epoch.
     /// # Note
     /// This method returns a reference to the GNSS data in the epoch.
-    pub fn next(&self) -> impl Iterator<Item = &GnssData> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = &GnssData> + '_ {
         self.data.iter()
     }
 }
