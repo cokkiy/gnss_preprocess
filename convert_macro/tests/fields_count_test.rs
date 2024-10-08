@@ -1,5 +1,3 @@
-use convert_macro::FieldsCount;
-
 #[cfg(feature = "fields-count")]
 #[test]
 fn test_fields_count() {
