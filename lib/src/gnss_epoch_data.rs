@@ -56,7 +56,7 @@ impl GnssEpochData {
     /// An iterator over the GNSS data in the epoch.
     /// # Note
     /// This method returns a reference to the GNSS data in the epoch.
-    pub fn next(&self) -> impl Iterator<Item = &GnssData> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = &GnssData> + '_ {
         self.data.iter()
     }
 }
