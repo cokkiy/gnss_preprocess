@@ -505,3 +505,82 @@ pub fn derive_ssc(input: TokenStream) -> TokenStream {
 
     TokenStream::from(expanded)
 }
+
+/// ## `FieldsCount`
+/// This macro can be derived for structs with named fields. It generates an implementation
+/// of the `FieldsCount` trait to count the number of fields in the struct.
+/// ### Example
+/// ```rust
+/// use convert_macro::FieldsCount;
+/// #[derive(FieldsCount)]
+/// struct MyStruct {
+///    field1: i32,
+///    field2: f64,
+///    }
+/// let count = MyStruct::get_fields_count();
+/// assert_eq!(count, 2);
+/// ```
+/// ## Note
+/// The `FieldsCount` macro in feature "fields-count".
+#[cfg(feature = "fields-count")]
+#[proc_macro_derive(FieldsCount)]
+pub fn derive_fields_count(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    let name = &input.ident;
+    let fields = match input.data {
+        Data::Struct(DataStruct {
+            fields: Fields::Named(FieldsNamed { named, .. }),
+            ..
+        }) => named,
+        _ => {
+            return TokenStream::from(quote! {
+                compile_error!("FieldsCount can only be derived for structs with named fields");
+            });
+        }
+    };
+    let field_idents: Vec<_> = fields.iter().map(|f| f.ident.as_ref().unwrap()).collect();
+    let len = field_idents.len();
+    let expanded = quote! {
+        impl fields_count::AllFieldsCount for #name {
+            fn get_fields_count() -> usize {
+                #len
+            }
+        }
+    };
+
+    TokenStream::from(expanded)
+}
+
+#[cfg(feature = "fields-count")]
+#[proc_macro_derive(SSFieldsCount)]
+pub fn derive_ss_fields_count(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    let name = &input.ident;
+    let fields = match input.data {
+        Data::Struct(DataStruct {
+            fields: Fields::Named(FieldsNamed { named, .. }),
+            ..
+        }) => named,
+        _ => {
+            return TokenStream::from(quote! {
+                compile_error!("SignalStrengthFieldsCount can only be derived for structs with named fields");
+            });
+        }
+    };
+
+    let field_idents: Vec<_> = fields
+        .iter()
+        .filter(|f| f.ident.as_ref().unwrap().to_string().starts_with("s"))
+        .map(|f| f.ident.as_ref().unwrap())
+        .collect();
+    let len = field_idents.len();
+    let expanded = quote! {
+        impl fields_count::SignalStrengthFieldsCount for #name {
+            fn get_ss_fields_count() -> usize {
+                #len
+            }
+        }
+    };
+
+    TokenStream::from(expanded)
+}

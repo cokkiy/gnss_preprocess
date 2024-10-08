@@ -11,6 +11,8 @@ syn = "2.0"
 quote = "1.0"
 rinex = { version = "0.16.1", optional = true }
 ssc = { path = "../ssc", optional = true }
+fields_count={path="../fields_count", optional=true}
 [features]
 gnss = ["rinex"]
 gnss-ssc = ["ssc"]
+fields-count=["fields_count"]
