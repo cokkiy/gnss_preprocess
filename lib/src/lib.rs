@@ -17,6 +17,7 @@ mod obsdata_provider;
 mod obsfile_provider;
 mod qzss_data;
 mod sbas_data;
+mod sv_data;
 mod tna_fields;
 pub use beidou_data::BeidouData;
 pub use galileo_data::GalileoData;
@@ -28,6 +29,7 @@ pub use navdata_provider::NavDataProvider;
 pub use obsfile_provider::ObsFileProvider;
 pub use qzss_data::QZSSData;
 pub use sbas_data::SBASData;
+pub use sv_data::SVData;
 
 /// A Python module implemented in Rust.
 #[pymodule]
