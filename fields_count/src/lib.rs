@@ -1,10 +1,10 @@
-/// A trait to count the number of fields in a struct.
+/// A trait to count the number of all fields in a struct.
 ///
 /// # Example
 ///
 /// ```
 /// struct MyStruct;
-/// impl FieldsCount for MyStruct {
+/// impl AllFieldsCount for MyStruct {
 ///     fn get_fields_count() -> usize {
 ///         3
 ///     }
@@ -13,7 +13,7 @@
 /// let count = MyStruct::get_fields_count();
 /// assert_eq!(count, 3);
 /// ```
-pub trait FieldsCount {
+pub trait AllFieldsCount {
     /// Returns the number of fields in the struct.
     fn get_fields_count() -> usize;
 }
@@ -45,7 +45,7 @@ mod tests {
     #[test]
     fn it_works() {
         struct TestStruct;
-        impl FieldsCount for TestStruct {
+        impl AllFieldsCount for TestStruct {
             fn get_fields_count() -> usize {
                 0
             }
