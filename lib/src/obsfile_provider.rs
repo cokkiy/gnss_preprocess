@@ -106,7 +106,7 @@ impl ObsFileProvider {
 
 /// Builds an observation files tree from the given observation files path.
 fn build_obs_tree(obs_files_path: &str) -> ObsFilesTree {
-    let mut obs_data_tree = ObsFilesTree::new();
+    let mut obs_data_tree = ObsFilesTree::new(obs_files_path);
     if let Ok(root_dir) = std::fs::read_dir(obs_files_path) {
         root_dir
             .map(|year_entries| year_entries.unwrap())

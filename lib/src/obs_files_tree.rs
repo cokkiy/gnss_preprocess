@@ -313,6 +313,7 @@ impl Ord for ObsFilesInYear {
 #[derive(Clone, Debug)]
 #[allow(dead_code)]
 pub(crate) struct ObsFilesTree {
+    base_path: String,
     items: Vec<ObsFilesInYear>,
 }
 
@@ -320,11 +321,17 @@ pub(crate) struct ObsFilesTree {
 impl ObsFilesTree {
     /// Creates a new `ObsFilesTree` object.
     ///
+    /// # Arguments
+    /// * `base_path` - The base path of the observation files.
+    ///
     /// # Returns
     ///
     /// A new `ObsFilesTree` instance.
-    pub(crate) fn new() -> Self {
-        Self { items: Vec::new() }
+    pub(crate) fn new(base_path: &str) -> Self {
+        Self {
+            base_path: base_path.to_string(),
+            items: Vec::new(),
+        }
     }
 
     /// Adds an `ObsFilesInYear` to the `ObsFilesTree`
@@ -366,6 +373,42 @@ impl ObsFilesTree {
     ///  the year, day of the year and the corresponding observation file path.
     pub(crate) fn get_files(&self) -> impl Iterator<Item = (u16, u16, PathBuf)> + '_ {
         self.items.iter().flat_map(|item| item.iter_paths())
+    }
+
+    /// Finds an observation file which observed by the `name` specified station at the given `year` and `day_of_year`.
+    /// # Arguments
+    /// * `year` - The year of the observation.
+    /// * `day_of_year` - The day of the year of the observation.
+    /// * `name` - The observation station name.
+    /// # Returns
+    /// The full path of the observation file which observed by the specified station at the given year and day of the year.
+    /// If the observation file is not found, it returns `None`.
+    ///
+    /// # Note
+    /// The observation file name should start with the `name` specified station name.
+    pub(crate) fn find_file(&self, year: u16, day_of_year: u16, name: &str) -> Option<PathBuf> {
+        self.items.iter().find_map(|item| {
+            if item.year == year {
+                item.obs_file_items.iter().find_map(|obs_item| {
+                    if obs_item.day_of_year == day_of_year {
+                        obs_item
+                            .obs_files
+                            .iter()
+                            .find(|file_name| file_name.starts_with(name))
+                            .map(|file_name| {
+                                PathBuf::from(format!("{}/{}", self.base_path, year))
+                                    .join(format!("{:03}", day_of_year))
+                                    .join("daily")
+                                    .join(file_name)
+                            })
+                    } else {
+                        None
+                    }
+                })
+            } else {
+                None
+            }
+        })
     }
 
     /// Finds the next observation file with the specified name, year and day of the year.
@@ -449,14 +492,23 @@ impl ObsFilesTree {
                 right.push(year_files.clone());
             }
         }
-        (ObsFilesTree { items: left }, ObsFilesTree { items: right })
+        (
+            ObsFilesTree {
+                base_path: self.base_path.clone(),
+                items: left,
+            },
+            ObsFilesTree {
+                base_path: self.base_path.clone(),
+                items: right,
+            },
+        )
     }
 
     /// Creates an `ObsFilesTree` object from the specified observation data.
     /// This method is used for testing purposes.
     #[cfg(test)]
     pub(super) fn from_data(obs_data: HashMap<u16, HashMap<u16, Vec<&'static str>>>) -> Self {
-        let mut obs_files_tree = ObsFilesTree::new();
+        let mut obs_files_tree = ObsFilesTree::new("");
         for (year, day_files) in obs_data {
             let mut obs_file_items = Vec::new();
             for (day, files) in day_files {

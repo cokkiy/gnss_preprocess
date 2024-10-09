@@ -85,7 +85,7 @@ fn test_obs_files_tree_get_obs_files() {
     let obs_files_tree_item1 = ObsFilesInYear::new(2023, vec![obs_file_item1]);
     let obs_files_tree_item2 = ObsFilesInYear::new(2024, vec![obs_file_item2]);
 
-    let mut obs_files_tree = ObsFilesTree::new();
+    let mut obs_files_tree = ObsFilesTree::new("");
     obs_files_tree.add_item(obs_files_tree_item1);
     obs_files_tree.add_item(obs_files_tree_item2);
 
@@ -108,7 +108,7 @@ fn test_obs_files_tree_get_day_numbers() {
     let obs_files_tree_item1 = ObsFilesInYear::new(2023, vec![obs_file_item1]);
     let obs_files_tree_item2 = ObsFilesInYear::new(2024, vec![obs_file_item2]);
 
-    let mut obs_files_tree = ObsFilesTree::new();
+    let mut obs_files_tree = ObsFilesTree::new("");
     obs_files_tree.add_item(obs_files_tree_item1);
     obs_files_tree.add_item(obs_files_tree_item2);
 
@@ -118,7 +118,7 @@ fn test_obs_files_tree_get_day_numbers() {
 
 #[test]
 fn test_obs_files_tree_get_day_numbers_empty() {
-    let obs_files_tree = ObsFilesTree::new();
+    let obs_files_tree = ObsFilesTree::new("");
 
     let day_numbers = obs_files_tree.get_day_numbers();
     assert_eq!(day_numbers, 0);
@@ -138,7 +138,7 @@ fn test_obs_files_tree_get_day_numbers_multiple_items() {
     let obs_files_tree_item1 = ObsFilesInYear::new(2023, vec![obs_file_item1]);
     let obs_files_tree_item2 = ObsFilesInYear::new(2024, vec![obs_file_item2, obs_file_item3]);
 
-    let mut obs_files_tree = ObsFilesTree::new();
+    let mut obs_files_tree = ObsFilesTree::new("");
     obs_files_tree.add_item(obs_files_tree_item1);
     obs_files_tree.add_item(obs_files_tree_item2);
 
@@ -564,7 +564,7 @@ fn test_get_file() {
 
 #[test]
 fn test_obs_files_tree_find_next_file() {
-    let mut obs_files_tree = ObsFilesTree::new();
+    let mut obs_files_tree = ObsFilesTree::new("");
     let year = 2023;
     let obs_files = vec!["file1.obs".to_string(), "file2.obs".to_string()];
     let obs_file_item1 = ObsFilesInDay::new(123, obs_files.clone());
