@@ -1,5 +1,9 @@
-use crate::SVData;
+use crate::{
+    glonass_data::GlonassData, BeidouData, GPSData, GalileoData, IRNSSData, QZSSData, SBASData,
+    SVData,
+};
 use core::f64;
+use fields_count::SignalStrengthFieldsCount;
 use hifitime::{Duration, Epoch};
 use ssc::SignalStrengthComparer;
 
@@ -22,9 +26,25 @@ pub struct GnssEpochData {
 
 #[allow(dead_code)]
 impl GnssEpochData {
-    // TODO: maybe we get this max value more reliable
-    // max number of signal strength fields in all type of GNSS data
-    const MAX_SS_FIELDS_NUMBERS: usize = 16;
+    /// The maximum number of signal strength fields in all types of GNSS data.
+    pub fn max_ss_fields_number() -> usize {
+        let gps_len = GPSData::get_ss_fields_count();
+        let galileo_len = GalileoData::get_ss_fields_count();
+        let glonass_len = GlonassData::get_ss_fields_count();
+        let beidou_len = BeidouData::get_ss_fields_count();
+        let qzss_len = QZSSData::get_ss_fields_count();
+        let sbas_len = SBASData::get_ss_fields_count();
+        let irnss_len = IRNSSData::get_ss_fields_count();
+
+        gps_len
+            .max(galileo_len)
+            .max(glonass_len)
+            .max(beidou_len)
+            .max(qzss_len)
+            .max(sbas_len)
+            .max(irnss_len)
+    }
+
     /// Creates a new `GnssEpochData` instance.
     ///
     /// # Arguments
@@ -90,11 +110,11 @@ impl GnssEpochData {
                 .map(|d| d.get_data());
             if let Some(sv_data_other) = sv_data_other {
                 let mut c_result = sv_data.ss_compare(sv_data_other);
-                //TODO: change 0 to proper value
-                c_result.extend_from_slice(&[0.0; GnssEpochData::MAX_SS_FIELDS_NUMBERS - 0]);
+                let max_len = GnssEpochData::max_ss_fields_number();
+                c_result.extend_from_slice(&vec![0.0; max_len - c_result.len()]);
                 result.push(c_result);
             } else {
-                result.push(vec![f64::MAX; GnssEpochData::MAX_SS_FIELDS_NUMBERS]);
+                result.push(vec![f64::MAX; GnssEpochData::max_ss_fields_number()]);
             }
         }
         result

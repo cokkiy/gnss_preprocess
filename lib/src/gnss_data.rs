@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use fields_count::AllFieldsCount;
 use rinex::{observation::ObservationData, prelude::Observable};
 use ssc::SignalStrengthComparer;
 
@@ -30,13 +31,13 @@ pub enum GnssData {
 impl GnssData {
     /// Get the maximum length of all GNSS constellation type data.
     pub fn max_len() -> usize {
-        let gps_len = GPSData::fields_pos().len();
-        let galileo_len = GalileoData::fields_pos().len();
-        let glonass_len = GlonassData::fields_pos().len();
-        let beidou_len = BeidouData::fields_pos().len();
-        let qzss_len = QZSSData::fields_pos().len();
-        let sbas_len = SBASData::fields_pos().len();
-        let irnss_len = IRNSSData::fields_pos().len();
+        let gps_len = GPSData::get_fields_count();
+        let galileo_len = GalileoData::get_fields_count();
+        let glonass_len = GlonassData::get_fields_count();
+        let beidou_len = BeidouData::get_fields_count();
+        let qzss_len = QZSSData::get_fields_count();
+        let sbas_len = SBASData::get_fields_count();
+        let irnss_len = IRNSSData::get_fields_count();
 
         gps_len
             .max(galileo_len)
