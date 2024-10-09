@@ -14,6 +14,7 @@ fn test_fields_count() {
     assert_eq!(result, 3);
 }
 
+#[cfg(feature = "fields-count")]
 #[test]
 fn test_ss_fields_count() {
     use convert_macro::{FieldsCount, SSFieldsCount};
