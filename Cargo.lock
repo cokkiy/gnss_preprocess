@@ -212,6 +212,7 @@ name = "gnss_preprocess"
 version = "0.1.0"
 dependencies = [
  "convert_macro",
+ "fields_count",
  "gnss-rs",
  "hifitime",
  "itertools 0.13.0",

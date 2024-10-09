@@ -1,6 +1,21 @@
-use convert_macro::{FieldsPos, FromGnss, FromSlice, FromVec, ToSlice, ToVec, SSC};
+use convert_macro::{
+    FieldsCount, FieldsPos, FromGnss, FromSlice, FromVec, SSFieldsCount, ToSlice, ToVec, SSC,
+};
 
-#[derive(Clone, Debug, Default, FieldsPos, ToSlice, FromSlice, ToVec, FromVec, FromGnss, SSC)]
+#[derive(
+    Clone,
+    Debug,
+    Default,
+    FieldsPos,
+    ToSlice,
+    FromSlice,
+    ToVec,
+    FromVec,
+    FromGnss,
+    SSC,
+    FieldsCount,
+    SSFieldsCount,
+)]
 pub struct GlonassData {
     c1c: f64,
     c1p: f64,
