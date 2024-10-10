@@ -16,6 +16,7 @@ lazy_static = "1.5"
 pyo3 = { version = "0.22.0", features = ["extension-module"] }
 splines = "4.3.0"
 itertools = "0.13.0"
+log="0.4"
 convert_macro = { path = "../convert_macro", features = [
   "gnss",
   "gnss-ssc",
@@ -24,7 +25,7 @@ convert_macro = { path = "../convert_macro", features = [
 ssc = { path = "../ssc" }
 fields_count = { path = "../fields_count" }
 [dev-dependencies]
-rstest = "0.22"
+rstest = "0.23"
 
 
 [package.metadata.scripts]

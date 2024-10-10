@@ -1,4 +1,5 @@
-use crate::obs_files_tree::ObsFilesTree;
+use crate::{obs_files_tree::ObsFilesTree, station_epoch_provider::StationEpochProvider};
+use log::warn;
 
 /// StationAlive is a struct that will store the station name and the station alive days.
 #[allow(dead_code)]
@@ -38,6 +39,32 @@ impl StationAlive {
         {
             self.alive_days.push((year, day_of_year));
         }
+    }
+
+    /// Creates a `Vec<StationEpochProvider>` for this station.
+    /// # Arguments
+    /// * `base_path` - The base path of the observation files.
+    /// # Returns
+    /// A `Vec<StationEpochProvider>` for this station.
+    /// # Note
+    /// The `StationEpochProvider` will be created for each alive day.
+    fn create_epoch_provider(&self, base_path: &str) -> Vec<StationEpochProvider> {
+        let mut epoch_providers = vec![];
+        for (year, day_of_year) in self.alive_days.iter() {
+            if let Ok(epoch_provider) =
+                StationEpochProvider::create(base_path, &self.station_name, *year, *day_of_year)
+            {
+                epoch_providers.push(epoch_provider);
+            } else {
+                warn!(
+                    "Failed to create StationEpochProvider for station {} for year {} and day fo year {}.",
+                    self.station_name,
+                    year,
+                    day_of_year
+                );
+            }
+        }
+        epoch_providers
     }
 }
 
