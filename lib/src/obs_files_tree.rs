@@ -90,6 +90,9 @@ impl ObsFilesInDay {
     /// for path in paths {
     ///     println!("Path: {:?}", path);
     /// }
+    /// // Output:
+    /// // Path: 123/daily/file1.obs
+    /// // Path: 123/daily/file2.obs
     /// ```
     pub(crate) fn iter(&self) -> impl Iterator<Item = PathBuf> + '_ {
         self.obs_files.iter().map(|file_name| {
