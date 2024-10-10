@@ -101,6 +101,28 @@ impl ObsFilesInDay {
                 .join(file_name)
         })
     }
+
+    /// Iterates over the observation file names in the `ObsFilesInDay` and get the day_of_year and station name.
+    /// # Returns
+    /// An iterator yielding tuples containing the day of the year and the station name.
+    /// # Examples
+    /// ```
+    /// use gnss_preprocess::ObsFilesInDay;
+    /// let obs_files = vec!["file1.obs".to_string(), "file2.obs".to_string()];
+    /// let obs_file_item = ObsFilesInDay::new(123, obs_files);
+    /// let mut iter = obs_file_item.station_iter();
+    /// assert_eq!(iter.next(), Some((123, "file1".to_string())));
+    /// assert_eq!(iter.next(), Some((123, "file2".to_string())));
+    /// assert_eq!(iter.next(), None);
+    /// ```
+    pub(crate) fn station_iter(&self) -> impl Iterator<Item = (u16, String)> + '_ {
+        self.obs_files.iter().map(|file_name| {
+            (
+                self.day_of_year,
+                file_name.split('.').next().unwrap().to_string(),
+            )
+        })
+    }
 }
 
 /// The `ObsFilesInYear` struct represents an item in the `ObsFilesTree`, containing the year and a list of `ObsFilesInDay` objects
@@ -247,6 +269,28 @@ impl ObsFilesInYear {
                     PathBuf::from(self.year.to_string()).join(path),
                 )
             })
+        })
+    }
+
+    /// Iterates over the `ObsFilesInYear` and get the year, day_of_year and station name.
+    /// # Returns
+    /// An iterator yielding tuples containing the year, day of the year and the station name.
+    /// # Examples
+    /// ```
+    /// use gnss_preprocess::obs_files_tree::{ObsFilesInDay, ObsFilesInYear};
+    /// let obs_files = vec!["file1.obs".to_string(), "file2.obs".to_string()];
+    /// let obs_file_item = ObsFilesInDay::new(123, obs_files);
+    /// let obs_files_tree_item = ObsFilesInYear::new(2023, vec![obs_file_item]);
+    /// let mut iter = obs_files_tree_item.iter_stations();
+    /// assert_eq!(iter.next(), Some((2023, 123, "file1".to_string())));
+    /// assert_eq!(iter.next(), Some((2023, 123, "file2".to_string())));
+    /// assert_eq!(iter.next(), None);
+    /// ```
+    pub(crate) fn iter_stations(&self) -> impl Iterator<Item = (u16, u16, String)> + '_ {
+        self.obs_file_items.iter().flat_map(|obs_item| {
+            obs_item
+                .station_iter()
+                .map(|(day, station)| (self.year, day, station))
         })
     }
 
@@ -505,6 +549,25 @@ impl ObsFilesTree {
                 items: right,
             },
         )
+    }
+
+    /// Returns an iterator over this `ObsFilesTree` and get the year, day_of_year and station name.
+    /// # Returns
+    /// An iterator yielding tuples containing the year, day of the year and the station name.
+    /// # Examples
+    /// ```
+    /// use gnss_preprocess::obs_files_tree::ObsFilesTree;
+    /// let obs_files = vec!["file1.obs".to_string(), "file2.obs".to_string()];
+    /// let obs_file_item = ObsFilesInDay::new(123, obs_files);
+    /// let mut obs_files_tree = ObsFilesTree::new("");
+    /// obs_files_tree.add_item(ObsFilesInYear::new(2023, vec![obs_file_item]));
+    /// let mut iter = obs_files_tree.iter();
+    /// assert_eq!(iter.next(), Some((2023, 123, "file1".to_string())));
+    /// assert_eq!(iter.next(), Some((2023, 123, "file2".to_string())));
+    /// assert_eq!(iter.next(), None);
+    /// ```
+    pub(crate) fn iter(&self) -> impl Iterator<Item = (u16, u16, String)> + '_ {
+        self.items.iter().flat_map(|item| item.iter_stations())
     }
 
     /// Creates an `ObsFilesTree` object from the specified observation data.

@@ -18,6 +18,7 @@ mod obsfile_provider;
 mod qzss_data;
 mod sbas_data;
 mod station_epoch_provider;
+mod stations_manager;
 mod sv_data;
 mod tna_fields;
 pub use beidou_data::BeidouData;
