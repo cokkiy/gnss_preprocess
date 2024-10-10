@@ -5,12 +5,27 @@ use crate::{
 use core::f64;
 use fields_count::SignalStrengthFieldsCount;
 use hifitime::{Duration, Epoch};
+use rinex::prelude::GroundPosition;
 use ssc::SignalStrengthComparer;
 
 /// A struct that represents the station coordinates.
 #[allow(dead_code)]
 #[derive(Clone, Copy, Debug)]
 pub struct Station(f64, f64, f64);
+
+impl From<(f64, f64, f64)> for Station {
+    /// Converts from a tuple to a `Station` instance.
+    fn from(data: (f64, f64, f64)) -> Self {
+        Self(data.0, data.1, data.2)
+    }
+}
+
+impl From<GroundPosition> for Station {
+    /// Converts from a `GroundPosition` instance to a `Station` instance.
+    fn from(data: GroundPosition) -> Self {
+        data.to_ecef_wgs84().into()
+    }
+}
 
 /// A struct that represents the GNSS epoch data.
 #[allow(dead_code)]
