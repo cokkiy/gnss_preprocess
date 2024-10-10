@@ -1,22 +1,20 @@
+use std::path::PathBuf;
+
 use rinex::Rinex;
 
-use crate::{
-    gnss_epoch_data::{GnssEpochData, Station},
-    obs_files_tree::ObsFilesTree,
-};
+use crate::gnss_epoch_data::{GnssEpochData, Station};
 
 #[allow(dead_code)]
-pub struct StationEpochProvider<'a> {
+pub struct StationEpochProvider {
     station_name: String,
     station: Station,
-    current_year: u16,
-    current_day_of_year: u16,
-    obs_files_tree: &'a ObsFilesTree,
-    cur_obs_file: Rinex,
+    year: u16,
+    day_of_year: u16,
+    obs_file: Rinex,
 }
 
 #[allow(dead_code)]
-impl<'a> StationEpochProvider<'a> {
+impl StationEpochProvider {
     /// Creates a new `StationEpochProvider` instance.
     ///
     /// # Arguments
@@ -31,23 +29,23 @@ impl<'a> StationEpochProvider<'a> {
     ///
     /// A new `StationEpochProvider` instance.
     pub(super) fn create(
+        base_path: &str,
         station_name: &str,
-        station: Station,
-        init_year: u16,
-        init_day_of_year: u16,
-        obs_files_tree: &'a ObsFilesTree,
+        year: u16,
+        day_of_year: u16,
     ) -> Result<Self, Box<dyn std::error::Error>> {
-        let obs_file = obs_files_tree
-            .find_file(init_year, init_day_of_year, station_name)
-            .unwrap(); // when calling this function, the file is guaranteed to exist
+        let obs_file = PathBuf::from(base_path)
+            .join(year.to_string())
+            .join("daily")
+            .join(format!("{:03}.obs", day_of_year));
+        let obs_file = Rinex::from_file(&obs_file.to_string_lossy())?;
 
         Ok(Self {
             station_name: station_name.to_string(),
-            station,
-            current_year: init_year,
-            current_day_of_year: init_day_of_year,
-            obs_files_tree,
-            cur_obs_file: Rinex::from_file(&obs_file.to_string_lossy())?,
+            station: obs_file.header.ground_position.unwrap_or_default().into(),
+            year,
+            day_of_year,
+            obs_file,
         })
     }
 
