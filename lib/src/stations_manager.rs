@@ -111,4 +111,29 @@ impl StationsManager {
             .map(|s| s.station_name.clone())
             .collect()
     }
+
+    /// Retrieves the specific station epoch provider.
+    /// # Arguments
+    /// * `base_path` - The base path of the observation files.
+    /// * `station_name` - The name of the station.
+    /// # Returns
+    /// A `Vec<StationEpochProvider>` for the specific station.
+    /// # Note
+    /// If the station is not found, it will return an empty `Vec`.
+    /// Otherwise, it will return a `Vec` with the `StationEpochProvider` for each alive day.
+    pub fn get_station_epoch_provider(
+        &self,
+        base_path: &str,
+        station_name: &str,
+    ) -> Vec<StationEpochProvider> {
+        if let Some(station) = self
+            .stations_alive
+            .iter()
+            .find(|s| s.station_name == station_name)
+        {
+            station.create_epoch_provider(base_path)
+        } else {
+            vec![]
+        }
+    }
 }
