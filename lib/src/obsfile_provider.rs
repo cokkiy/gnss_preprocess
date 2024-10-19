@@ -30,7 +30,7 @@ impl ObsFileProvider {
     pub fn new(obs_files_path: &str) -> Self {
         Self {
             obs_files_path: obs_files_path.to_string(),
-            obs_files_tree: build_obs_tree(obs_files_path),
+            obs_files_tree: ObsFilesTree::create_obs_tree(obs_files_path),
         }
     }
 
@@ -102,45 +102,6 @@ impl ObsFileProvider {
             obs_files_tree: ObsFilesTree::from_data(obs_data),
         }
     }
-}
-
-/// Builds an observation files tree from the given observation files path.
-fn build_obs_tree(obs_files_path: &str) -> ObsFilesTree {
-    let mut obs_data_tree = ObsFilesTree::new(obs_files_path);
-    if let Ok(root_dir) = std::fs::read_dir(obs_files_path) {
-        root_dir
-            .map(|year_entries| year_entries.unwrap())
-            .for_each(|entry| {
-                let year = entry.file_name().to_string_lossy().parse::<u16>().unwrap();
-                let mut obs_files_in_year = ObsFilesInYear::create_empty(year);
-                if let Ok(day_of_years) = std::fs::read_dir(entry.path()) {
-                    day_of_years
-                        .map(|entries| entries.unwrap())
-                        .for_each(|day_entry| {
-                            let day_of_year = day_entry
-                                .file_name()
-                                .to_string_lossy()
-                                .parse::<u16>()
-                                .expect(
-                                    format!("Failed to parse day of year: {:?}", day_entry)
-                                        .as_str(),
-                                );
-                            let mut obs_files_in_days = Vec::new();
-                            if let Ok(files) = std::fs::read_dir(day_entry.path().join("daily")) {
-                                files.map(|file| file.unwrap()).for_each(|file| {
-                                    obs_files_in_days
-                                        .push(file.file_name().to_string_lossy().to_string());
-                                });
-                            }
-                            let obs_file_item = ObsFilesInDay::new(day_of_year, obs_files_in_days);
-                            obs_files_in_year.add_item(obs_file_item);
-                        });
-                }
-                obs_data_tree.add_item(obs_files_in_year);
-            });
-    };
-
-    obs_data_tree
 }
 
 #[cfg(test)]
