@@ -2,7 +2,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use crate::obs_files_tree::{ObsFilesInDay, ObsFilesInYear, ObsFilesTree};
+use crate::obs_files_tree::ObsFilesTree;
 
 /// `ObsFileProvider` is a struct that represents a provider of observation data file.
 /// With this struct, you can get the total count of observation files, the number of unique days,
