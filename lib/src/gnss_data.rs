@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
 use fields_count::AllFieldsCount;
-use rinex::{observation::ObservationData, prelude::Observable};
+use rinex::{
+    observation::ObservationData,
+    prelude::{Constellation, Observable},
+};
 use ssc::SignalStrengthComparer;
 
 use crate::{
@@ -48,43 +51,25 @@ impl GnssData {
             .max(irnss_len)
     }
 
-    /// Create GnssData from HashMap<Observable, ObservationData>.
-    ///
+    /// Create GNSS data from the given data.
     /// # Arguments
-    ///
-    /// * `data` - HashMap<Observable, ObservationData>
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use std::collections::HashMap;
-    /// use rinex::{observation::{ObservationData, LliFlags}, prelude::Observable};
-    /// use gnss_preprocess::{GnssData, GPSData};
-    ///
-    /// let mut data = HashMap::new();
-    /// data.insert(
-    ///    Observable::PseudoRange("c1c".to_string()),
-    ///    ObservationData::new(
-    ///         1.0,
-    ///         Some(LliFlags::OK_OR_UNKNOWN),
-    ///         Some(rinex::observation::SNR::DbHz0),
-    ///         ),
-    ///     );
-    /// data.insert(
-    ///     Observable::Phase("l1c".to_string()),
-    ///     ObservationData::new(
-    ///         2.0,
-    ///         Some(LliFlags::OK_OR_UNKNOWN),
-    ///         Some(rinex::observation::SNR::DbHz0),
-    ///         ),
-    ///     );
-    /// let gnss_data = GnssData::create::<GPSData>(&data);
-    /// ```
-    pub fn create<'a, T>(data: &'a HashMap<Observable, ObservationData>) -> Self
-    where
-        T: From<&'a HashMap<Observable, ObservationData>> + Into<GnssData>,
-    {
-        T::from(data).into()
+    /// * `constellation` - The GNSS constellation type.
+    /// * `data` - The observation data.
+    /// # Returns
+    /// The GNSS data.
+    pub fn create(
+        constellation: &Constellation,
+        data: &HashMap<Observable, ObservationData>,
+    ) -> Self {
+        match constellation {
+            Constellation::GPS => GnssData::GPSData(GPSData::from(data)),
+            Constellation::Glonass => GnssData::GlonassData(GlonassData::from(data)),
+            Constellation::Galileo => GnssData::GalileoData(GalileoData::from(data)),
+            Constellation::QZSS => GnssData::QZSSData(QZSSData::from(data)),
+            Constellation::BeiDou => GnssData::BeidouData(BeidouData::from(data)),
+            Constellation::IRNSS => GnssData::IRNSSData(IRNSSData::from(data)),
+            _ => GnssData::SBASData(SBASData::from(data)),
+        }
     }
 }
 
@@ -239,7 +224,7 @@ mod tests {
                 Some(rinex::observation::SNR::DbHz0),
             ),
         );
-        let gnss_data = GnssData::create::<GPSData>(&data);
+        let gnss_data = GnssData::create(&Constellation::GPS, &data);
         if let GnssData::GPSData(_) = gnss_data {
             // Test passed
         } else {
@@ -266,7 +251,7 @@ mod tests {
                 Some(rinex::observation::SNR::DbHz0),
             ),
         );
-        let gnss_data = GnssData::create::<GlonassData>(&data);
+        let gnss_data = GnssData::create(&Constellation::Glonass, &data);
         if let GnssData::GlonassData(_) = gnss_data {
             // Test passed
         } else {
@@ -293,7 +278,7 @@ mod tests {
                 Some(rinex::observation::SNR::DbHz0),
             ),
         );
-        let gnss_data = GnssData::create::<GalileoData>(&data);
+        let gnss_data = GnssData::create(&Constellation::Galileo, &data);
         if let GnssData::GalileoData(_) = gnss_data {
             // Test passed
         } else {
@@ -320,7 +305,7 @@ mod tests {
                 Some(rinex::observation::SNR::DbHz0),
             ),
         );
-        let gnss_data = GnssData::create::<SBASData>(&data);
+        let gnss_data = GnssData::create(&Constellation::SBAS, &data);
         if let GnssData::SBASData(_) = gnss_data {
             // Test passed
         } else {
@@ -347,7 +332,7 @@ mod tests {
                 Some(rinex::observation::SNR::DbHz0),
             ),
         );
-        let gnss_data = GnssData::create::<QZSSData>(&data);
+        let gnss_data = GnssData::create(&Constellation::QZSS, &data);
         if let GnssData::QZSSData(_) = gnss_data {
             // Test passed
         } else {
@@ -374,7 +359,7 @@ mod tests {
                 Some(rinex::observation::SNR::DbHz0),
             ),
         );
-        let gnss_data = GnssData::create::<BeidouData>(&data);
+        let gnss_data = GnssData::create(&Constellation::BeiDou, &data);
         if let GnssData::BeidouData(_) = gnss_data {
             // Test passed
         } else {
@@ -401,7 +386,7 @@ mod tests {
                 Some(rinex::observation::SNR::DbHz0),
             ),
         );
-        let gnss_data = GnssData::create::<IRNSSData>(&data);
+        let gnss_data = GnssData::create(&Constellation::IRNSS, &data);
         if let GnssData::IRNSSData(_) = gnss_data {
             // Test passed
         } else {
