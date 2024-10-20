@@ -27,6 +27,13 @@ impl From<GroundPosition> for Station {
     }
 }
 
+impl From<Option<GroundPosition>> for Station {
+    /// Converts from an optional `GroundPosition` instance to a `Station` instance.
+    fn from(data: Option<GroundPosition>) -> Self {
+        data.map_or_else(|| Station(0.0, 0.0, 0.0), |d| d.into())
+    }
+}
+
 /// A struct that represents the GNSS epoch data.
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
