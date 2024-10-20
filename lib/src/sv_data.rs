@@ -11,6 +11,16 @@ pub struct SVData(u8, GnssData);
 
 #[allow(dead_code)]
 impl SVData {
+    /// Creates a new `SVData` instance.
+    /// # Arguments
+    /// * `prn` - The satellite vehicle PRN.
+    /// * `data` - The GNSS data.
+    /// # Returns
+    /// A new `SVData` instance.
+    pub(crate) fn new(prn: u8, data: GnssData) -> Self {
+        Self(prn, data)
+    }
+
     /// Get the satellite vehicle information from prn and the GNSS data type.
     pub fn get_sv(&self) -> SV {
         match self.1 {
