@@ -6,8 +6,11 @@ use crate::{
 ///
 /// It will be responsible for:
 /// - Scan all obs files (We really load data from `ObsFileTree` instead of scan file by ourself.)
-/// and load all stations name and observation time (year and day_of_year).
-/// - Create a StationEpochProvider for each station at the station works day.
+/// and load all stations name and it's observation time (year and day_of_year).
+/// - Create a `StationAlive` represents the station alive days for each station.
+/// - Provide a method `get_all_stations` for retrieves all stations name.
+/// - Provide a method `get_station_epoch_provider` for retrieves the `StationEpochProvider` instance
+/// for the specified station.
 #[allow(dead_code)]
 pub struct StationsManager {
     stations_alive: Vec<StationAlive>,
@@ -45,5 +48,18 @@ impl StationsManager {
             .iter()
             .map(|s| s.get_station_name().to_string())
             .collect()
+    }
+
+    pub fn get_station_epoch_provider<'a>(
+        &'a self,
+        base_path: &'a str,
+        station_name: &str,
+    ) -> StationEpochProvider {
+        let station = self
+            .stations_alive
+            .iter()
+            .find(|s| s.get_station_name() == station_name)
+            .unwrap();
+        StationEpochProvider::new(base_path, station)
     }
 }
