@@ -24,6 +24,7 @@ mod station_epoch_provider;
 mod stations_manager;
 mod sv_data;
 mod tna_fields;
+mod nav_data;
 pub use beidou_data::BeidouData;
 pub use galileo_data::GalileoData;
 pub use gnss_data::GnssData;
