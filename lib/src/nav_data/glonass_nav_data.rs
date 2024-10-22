@@ -4,21 +4,21 @@ use rinex::navigation::Ephemeris;
 /// Glonass navigation data
 #[derive(Debug, Clone, PartialEq, FieldsPos, ToVec)]
 pub struct GlonassNavData {
-    clock_bias: f64,
-    clock_drift: f64,
+    pub clock_bias: f64,
+    pub clock_drift: f64,
     // message frame time
-    mrt: f64,
-    x: f64,
-    vel_x: f64,
-    accel_x: f64,
-    health: f64,
-    y: f64,
-    vel_y: f64,
-    accel_y: f64,
-    z: f64,
-    vel_z: f64,
-    accel_z: f64,
-    age: f64,
+    pub mrt: f64,
+    pub x: f64,
+    pub vel_x: f64,
+    pub accel_x: f64,
+    pub health: f64,
+    pub y: f64,
+    pub vel_y: f64,
+    pub accel_y: f64,
+    pub z: f64,
+    pub vel_z: f64,
+    pub accel_z: f64,
+    pub age: f64,
 }
 
 impl From<&Ephemeris> for GlonassNavData {

@@ -4,23 +4,23 @@ use rinex::navigation::Ephemeris;
 /// All SBAS navigation data
 #[derive(Debug, Clone, PartialEq, FieldsPos, ToVec)]
 pub struct SBASNavData {
-    clock_bias: f64,
-    clock_drift: f64,
+    pub clock_bias: f64,
+    pub clock_drift: f64,
     // time of message
-    tom: f64,
-    x: f64,
-    vel_x: f64,
-    accel_x: f64,
-    health: f64,
-    y: f64,
-    vel_y: f64,
-    accel_y: f64,
-    ura: f64,
-    z: f64,
-    vel_z: f64,
-    accel_z: f64,
+    pub tom: f64,
+    pub x: f64,
+    pub vel_x: f64,
+    pub accel_x: f64,
+    pub health: f64,
+    pub y: f64,
+    pub vel_y: f64,
+    pub accel_y: f64,
+    pub ura: f64,
+    pub z: f64,
+    pub vel_z: f64,
+    pub accel_z: f64,
     // issue of data navigation
-    iodn: f64,
+    pub iodn: f64,
 }
 
 impl From<&Ephemeris> for SBASNavData {
