@@ -22,6 +22,7 @@ pub struct GalileoNavData {
     pub crc: f64,
     pub omega: f64,
     pub omega_dot: f64,
+    pub i_dot: f64,
 }
 
 impl From<&Ephemeris> for GalileoNavData {
@@ -46,6 +47,7 @@ impl From<&Ephemeris> for GalileoNavData {
             crc: value.get_orbit_f64("crc").unwrap_or(0.0),
             omega: value.get_orbit_f64("omega").unwrap_or(0.0),
             omega_dot: value.get_orbit_f64("omegaDot").unwrap_or(0.0),
+            i_dot: value.get_orbit_f64("idot").unwrap_or(0.0),
         }
     }
 }
