@@ -1,5 +1,4 @@
-use gnss_rs::sv::SV;
-use rinex::prelude::Constellation;
+use rinex::prelude::{Constellation, SV};
 
 use crate::GnssData;
 /// A struct that represents the SV data.

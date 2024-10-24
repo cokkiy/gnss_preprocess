@@ -1,5 +1,4 @@
-use gnss_rs::sv::SV;
-use rinex::prelude::{Constellation, Observable};
+use rinex::prelude::{Constellation, Observable, SV};
 
 /// Returns the next day given a year and the day of the year.
 ///
@@ -105,8 +104,7 @@ pub fn get_observable_field_name(observable: &Observable) -> Option<&str> {
 
 #[cfg(test)]
 mod tests {
-    use gnss_rs::sv::SV;
-    use rinex::prelude::{Constellation, Observable};
+    use rinex::prelude::{Constellation, Observable, SV};
 
     use crate::common::{get_observable_field_name, sv_to_u16};
 

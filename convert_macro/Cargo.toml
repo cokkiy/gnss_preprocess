@@ -9,7 +9,7 @@ proc-macro = true
 [dependencies]
 syn = "2.0"
 quote = "1.0"
-rinex = { version = "0.16.1", optional = true }
+rinex = { git = "https://mirror.ghproxy.com/https://github.com/cokkiy/rinex",branch="main", optional = true }
 ssc = { path = "../ssc", optional = true }
 fields_count={path="../fields_count", optional=true}
 [features]
