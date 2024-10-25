@@ -1,10 +1,13 @@
 #[cfg(test)]
 mod tests {
+
     use std::str::FromStr;
 
-    use gnss_rs::sv::{self, SV};
     use hifitime::{Epoch, TimeScale};
-    use rinex::{prelude::Constellation, Rinex};
+    use rinex::{
+        prelude::{Constellation, SV},
+        Rinex,
+    };
 
     use crate::nav_data::{
         BeiDouNavData, GPSNavData, GalileoNavData, GlonassNavData, QZSSNavData, SBASNavData,
@@ -254,12 +257,12 @@ mod tests {
     #[test]
     fn test_from_ephemeris_for_sbsa_nav_data() {
         let rinex = Rinex::from_file("/mnt/d/GNSS_Data/Data/Nav/2020/brdm0010.20p").unwrap();
-        let _sv = SV::from_str("S22").unwrap();
+        let _sv = SV::from_str("S29").unwrap();
         let ephemeris = rinex
             .navigation()
             .into_iter()
             .find(|(epoch, _)| {
-                **epoch == Epoch::from_gregorian(2020, 1, 1, 0, 2, 08, 0, TimeScale::GPST)
+                **epoch == Epoch::from_gregorian(2020, 1, 1, 21, 14, 40, 0, TimeScale::GPST)
             })
             .unwrap()
             .1
@@ -278,23 +281,23 @@ mod tests {
 
         let nav_data = SBASNavData::from(ephemeris);
         let expected = SBASNavData {
-            clock_bias: 0.000000000000E+00,
-            clock_drift: 0.000000000000E+00,
+            clock_bias: 2.328306436539E-08,
+            clock_drift: 2.000888343900E-11,
             // time of message
-            tom: 2.592340000000E+05,
-            x: -3.389392800000E+04,
-            vel_x: 0.000000000000E+00,
-            accel_x: 0.000000000000E+00,
-            health: 6.300000000000E+01,
-            y: 2.508018800000E+04,
-            vel_y: 0.000000000000E+00,
-            accel_y: 0.000000000000E+00,
-            ura: 3.276700000000E+04,
-            z: 0.000000000000E+00,
-            vel_z: 0.000000000000E+00,
-            accel_z: 0.000000000000E+00,
+            tom: 3.356560000000E+05,
+            x: -3.452250496000E+04,
+            vel_x: 1.693750000000E-04,
+            accel_x: -1.000000000000E-07,
+            health: 0.0,
+            y: 2.419724760000E+04,
+            vel_y: -1.223750000000E-03,
+            accel_y: -7.500000000000E-08,
+            ura: 4.096000000000E+03,
+            z: -3.080840000000E+01,
+            vel_z: 2.416000000000E-03,
+            accel_z: 1.875000000000E-07,
             // issue of data navigation
-            iodn: 9.700000000000E+01,
+            iodn: 1.470000000000E+02,
         };
         assert_eq!(nav_data, expected);
     }
