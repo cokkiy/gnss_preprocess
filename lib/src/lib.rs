@@ -9,6 +9,7 @@ mod gnss_data_provider;
 mod gnss_epoch_data;
 mod gnss_provider;
 mod gps_data;
+mod interpolation;
 mod irnss_data;
 mod navdata_interpolation;
 mod navdata_provider;

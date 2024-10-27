@@ -18,6 +18,7 @@ splines = "4.3.0"
 itertools = "0.13.0"
 log="0.4"
 rand="0.8.4"
+lagrangian_interpolation="0.1.1"
 convert_macro = { path = "../convert_macro", features = [
   "gnss",
   "gnss-ssc",

@@ -331,6 +331,7 @@ dependencies = [
  "gnss-rs 2.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "hifitime",
  "itertools",
+ "lagrangian_interpolation",
  "lazy_static",
  "log",
  "pyo3",
@@ -409,6 +410,12 @@ checksum = "6a88f1bda2bd75b0452a14784937d796722fdebfe50df998aeb3f0b7603019a9"
 dependencies = [
  "wasm-bindgen",
 ]
+
+[[package]]
+name = "lagrangian_interpolation"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f812fa8681fa227897df25013abac8739365e4e8fa2a2b3311493fc402ce05b2"
 
 [[package]]
 name = "lazy_static"
