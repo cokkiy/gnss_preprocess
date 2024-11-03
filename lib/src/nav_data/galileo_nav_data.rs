@@ -2,7 +2,7 @@ use convert_macro::{FieldsPos, ToVec};
 use rinex::navigation::Ephemeris;
 
 /// Galileo navigation data
-#[derive(Debug, Clone, PartialEq, FieldsPos, ToVec)]
+#[derive(Debug, Clone, PartialEq, FieldsPos, ToVec, Default)]
 pub struct GalileoNavData {
     pub clock_bias: f64,
     pub clock_drift: f64,

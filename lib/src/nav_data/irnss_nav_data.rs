@@ -1,7 +1,7 @@
 use convert_macro::{FieldsPos, ToVec};
 use rinex::navigation::Ephemeris;
 
-#[derive(Debug, Clone, PartialEq, FieldsPos, ToVec)]
+#[derive(Debug, Clone, PartialEq, FieldsPos, ToVec, Default)]
 pub struct IRNSSNavData {
     pub clock_bias: f64,
     pub clock_drift: f64,

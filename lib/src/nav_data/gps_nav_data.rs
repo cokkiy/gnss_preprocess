@@ -2,7 +2,7 @@ use convert_macro::{FieldsPos, ToVec};
 use rinex::navigation::Ephemeris;
 
 /// GPS 导航电文主要信息
-#[derive(Debug, Clone, PartialEq, FieldsPos, ToVec)]
+#[derive(Debug, Clone, PartialEq, FieldsPos, ToVec, Default)]
 pub struct GPSNavData {
     /// The sv clock bias
     pub clock_bias: f64,
