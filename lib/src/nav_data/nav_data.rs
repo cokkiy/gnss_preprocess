@@ -1,4 +1,8 @@
 use hifitime::Epoch;
+use rinex::{
+    navigation::Ephemeris,
+    prelude::{Constellation, SV},
+};
 
 use super::{
     BeiDouNavData, GPSNavData, GalileoNavData, GlonassNavData, IRNSSNavData, QZSSNavData,
@@ -88,6 +92,43 @@ impl NavData {
     /// Checks if the NavData is SBASNavData
     pub fn is_sbas_nav_data(&self) -> bool {
         matches!(self, NavData::SBASNavData(_))
+    }
+
+    /// Creates a NavData from a Rinex Ephemeris
+    /// # Arguments
+    /// * `epoch` - The epoch of the ephemeris
+    /// * `sv` - The satellite vehicle
+    /// * `frame` - The ephemeris frame
+    /// # Returns
+    /// A NavData
+    pub(crate) fn from_rinex_frame(epoch: &Epoch, sv: &SV, frame: &Ephemeris) -> NavData {
+        match sv.constellation {
+            Constellation::GPS => NavData::GPSNavData((*epoch, frame.into())),
+            Constellation::Glonass => NavData::GlonassNavData((*epoch, frame.into())),
+            Constellation::BeiDou => NavData::BeiDouNavData((*epoch, frame.into())),
+            Constellation::QZSS => NavData::QZSSNavData((*epoch, frame.into())),
+            Constellation::Galileo => NavData::GalileoNavData((*epoch, frame.into())),
+            Constellation::IRNSS => NavData::IRNSSNavData((*epoch, frame.into())),
+            _ => NavData::SBASNavData((*epoch, frame.into())),
+        }
+    }
+
+    /// Creates a default NavData
+    /// # Arguments
+    /// * `epoch` - The epoch of the ephemeris
+    /// * `sv` - The satellite vehicle
+    /// # Returns
+    /// A NavData
+    pub(crate) fn create_default(epoch: &Epoch, sv: &SV) -> Self {
+        match sv.constellation {
+            Constellation::GPS => NavData::GPSNavData((*epoch, Default::default())),
+            Constellation::Glonass => NavData::GlonassNavData((*epoch, Default::default())),
+            Constellation::BeiDou => NavData::BeiDouNavData((*epoch, Default::default())),
+            Constellation::QZSS => NavData::QZSSNavData((*epoch, Default::default())),
+            Constellation::Galileo => NavData::GalileoNavData((*epoch, Default::default())),
+            Constellation::IRNSS => NavData::IRNSSNavData((*epoch, Default::default())),
+            _ => NavData::SBASNavData((*epoch, Default::default())),
+        }
     }
 }
 
