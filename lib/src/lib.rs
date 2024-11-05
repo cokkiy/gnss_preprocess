@@ -16,6 +16,7 @@ mod nav_data_provider;
 mod navdata_interpolation;
 mod navdata_provider;
 mod navigation_data;
+mod nearest_points_finder;
 mod obs_files_tree;
 mod obsdata_provider;
 mod obsfile_provider;
