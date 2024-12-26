@@ -13,7 +13,7 @@ pub(crate) trait NearestPointsFinder {
     /// * A vector of `NavData` that contains the nearest points to the given epoch
     /// # Note
     /// The vector of `NavData` should be sorted by the distance to the given epoch.
-    fn find_nearest_points(&self, sv: &SV, epoch: &Epoch) -> Vec<NavData>;
+    fn find_nearest_points(&self, sv: &SV, epoch: &Epoch) -> Option<Vec<NavData>>;
 }
 
 /// TreePointsFinder is a NearestPointsFinder that finds three nearest points.
@@ -21,6 +21,14 @@ pub(crate) struct TreePointsFinder {
     base_path: String,
     year_and_days: Vec<(u16, u16)>,
     cached_rinex: RefCell<Vec<(u16, u16, Option<Rinex>)>>,
+}
+
+enum GetNavDataResult {
+    AtMiddle(Vec<NavData>),
+    AtLast(Epoch, Vec<NavData>),
+    AtFirst(Epoch, Vec<NavData>),
+    AtFirstLast(Epoch, Vec<NavData>),
+    None,
 }
 
 impl TreePointsFinder {
@@ -91,7 +99,6 @@ impl TreePointsFinder {
                 break;
             }
         }
-
         if self.cached_rinex.borrow().len() == 4 {
             // remove the first element
             self.cached_rinex.borrow_mut().remove(0);
@@ -103,7 +110,12 @@ impl TreePointsFinder {
         self.cached_rinex.borrow().len() - 1
     }
 
-    fn get_last_epoch_nav_data(&self, cache_index: usize, epoch: &Epoch, sv: &SV) -> NavData {
+    fn get_last_epoch_nav_data(
+        &self,
+        cache_index: usize,
+        epoch: &Epoch,
+        sv: &SV,
+    ) -> Option<NavData> {
         if let Some(rinex) = self
             .cached_rinex
             .borrow()
@@ -124,13 +136,18 @@ impl TreePointsFinder {
                     .iter()
                     .find(|f| f.as_eph().is_some_and(|(_, this_sv, _)| this_sv == *sv))
                     .unwrap(); // safe to unwrap
-                return NavData::from_rinex_frame(e, sv, frame.as_eph().unwrap().2);
+                return Some(NavData::from_rinex_frame(e, sv, frame.as_eph().unwrap().2));
             }
         }
-        return NavData::create_default(epoch, sv);
+        return None;
     }
 
-    fn get_first_epoch_nav_data(&self, cache_index: usize, epoch: &Epoch, sv: &SV) -> NavData {
+    fn get_first_epoch_nav_data(
+        &self,
+        cache_index: usize,
+        epoch: &Epoch,
+        sv: &SV,
+    ) -> Option<NavData> {
         if let Some(rinex) = self
             .cached_rinex
             .borrow()
@@ -151,17 +168,27 @@ impl TreePointsFinder {
                     .iter()
                     .find(|f| f.as_eph().is_some_and(|(_, this_sv, _)| this_sv == *sv))
                     .unwrap(); // safe to unwrap
-                return NavData::from_rinex_frame(e, sv, frame.as_eph().unwrap().2);
+                return Some(NavData::from_rinex_frame(e, sv, frame.as_eph().unwrap().2));
             }
         }
-        return NavData::create_default(epoch, sv);
+        return None;
     }
-}
 
-impl NearestPointsFinder for TreePointsFinder {
-    fn find_nearest_points(&self, sv: &SV, epoch: &Epoch) -> Vec<NavData> {
-        let i = self.get_rinex_index(epoch);
-        if let Some(rinex) = self.cached_rinex.borrow().get(i).unwrap().2.as_ref() {
+    fn get_nav_data_from_rinex_at(
+        &self,
+        cache_index: usize,
+        epoch: &Epoch,
+        sv: &SV,
+    ) -> GetNavDataResult {
+        let mut points = Vec::with_capacity(3);
+        if let Some(rinex) = self
+            .cached_rinex
+            .borrow()
+            .get(cache_index)
+            .unwrap()
+            .2
+            .as_ref()
+        {
             let epoch_frames = rinex
                 .navigation()
                 .filter(|(_, nvf)| {
@@ -175,52 +202,167 @@ impl NearestPointsFinder for TreePointsFinder {
                     .find(|f| f.as_eph().is_some_and(|(_, this_sv, _)| this_sv == *sv))
                     .unwrap(); // safe to unwrap
                 let current = NavData::from_rinex_frame(&epoch, sv, frame.as_eph().unwrap().2);
+                points.push(current);
 
-                // index in filter epoch_frames
-                if epoch
-                    == rinex
-                        .navigation()
-                        .filter(|(_, nvf)| {
-                            nvf.iter()
-                                .any(|f| f.as_eph().is_some_and(|(_, this_sv, _)| this_sv == *sv))
-                        })
-                        .next()
-                        .unwrap()
-                        .0
-                        .clone()
-                {
-                    // first frame
-                    let prev_epoch = epoch - Duration::from_days(1.0);
-                    let prev_rinex_index = self.get_rinex_index(&prev_epoch);
-                    let prev_nav_data = self.get_last_epoch_nav_data(prev_rinex_index, &epoch, sv);
-                } else if epoch
-                    >= rinex
-                        .navigation()
-                        .filter(|(_, nvf)| {
-                            nvf.iter()
-                                .any(|f| f.as_eph().is_some_and(|(_, this_sv, _)| this_sv == *sv))
-                        })
-                        .last()
-                        .unwrap()
-                        .0
-                        .clone()
-                {
-                    // last frame
-                    let next_epoch = epoch + Duration::from_days(1.0);
-                    let next_rinex_index = self.get_rinex_index(&next_epoch);
-                    let next_nav_data = self.get_first_epoch_nav_data(next_rinex_index, &epoch, sv);
-                } else {
+                let first_epoch = rinex
+                    .navigation()
+                    .filter(|(_, nvf)| {
+                        nvf.iter()
+                            .any(|f| f.as_eph().is_some_and(|(_, this_sv, _)| this_sv == *sv))
+                    })
+                    .next()
+                    .unwrap()
+                    .0
+                    .clone();
+                let last_epoch = rinex
+                    .navigation()
+                    .filter(|(_, nvf)| {
+                        nvf.iter()
+                            .any(|f| f.as_eph().is_some_and(|(_, this_sv, _)| this_sv == *sv))
+                    })
+                    .last()
+                    .unwrap()
+                    .0
+                    .clone();
+                if epoch > first_epoch && epoch < last_epoch {
                     // middle frame
+                    let (prev_epoch, prev_frames) = rinex
+                        .navigation()
+                        .filter(|(_, nvf)| {
+                            nvf.iter()
+                                .any(|f| f.as_eph().is_some_and(|(_, this_sv, _)| this_sv == *sv))
+                        })
+                        .filter(|(&e, _)| e < epoch)
+                        .min_by(|(&e1, _), (&e2, _)| (epoch - e1).cmp(&(epoch - e2)))
+                        .unwrap();
+                    let prev_frame = prev_frames
+                        .iter()
+                        .find(|f| f.as_eph().is_some_and(|(_, this_sv, _)| this_sv == *sv))
+                        .unwrap();
+                    let prev_data =
+                        NavData::from_rinex_frame(prev_epoch, sv, prev_frame.as_eph().unwrap().2);
+                    let (next_epoch, next_frames) = rinex
+                        .navigation()
+                        .filter(|(_, nvf)| {
+                            nvf.iter()
+                                .any(|f| f.as_eph().is_some_and(|(_, this_sv, _)| this_sv == *sv))
+                        })
+                        .filter(|(&e, _)| e > epoch)
+                        .min_by(|(&e1, _), (&e2, _)| (e1 - epoch).cmp(&(e2 - epoch)))
+                        .unwrap();
+                    let next_frame = next_frames
+                        .iter()
+                        .find(|f| f.as_eph().is_some_and(|(_, this_sv, _)| this_sv == *sv))
+                        .unwrap();
+                    let next_data =
+                        NavData::from_rinex_frame(&next_epoch, sv, next_frame.as_eph().unwrap().2);
+                    points.insert(0, prev_data);
+                    points.insert(2, next_data);
+                    return GetNavDataResult::AtMiddle(points);
+                } else if epoch == first_epoch {
+                    // first frame
+                    let (next_epoch, next_frames) = rinex
+                        .navigation()
+                        .filter(|(_, nvf)| {
+                            nvf.iter()
+                                .any(|f| f.as_eph().is_some_and(|(_, this_sv, _)| this_sv == *sv))
+                        })
+                        .filter(|(&e, _)| e > epoch)
+                        .min_by(|(&e1, _), (&e2, _)| (e1 - epoch).cmp(&(e2 - epoch)))
+                        .unwrap();
+                    let next_frame = next_frames
+                        .iter()
+                        .find(|f| f.as_eph().is_some_and(|(_, this_sv, _)| this_sv == *sv))
+                        .unwrap();
+                    let next_data =
+                        NavData::from_rinex_frame(&next_epoch, sv, next_frame.as_eph().unwrap().2);
+                    points.insert(1, next_data);
+                    return GetNavDataResult::AtFirst(epoch, points);
+                } else {
+                    // last frame
+                    let (prev_epoch, prev_frames) = rinex
+                        .navigation()
+                        .filter(|(_, nvf)| {
+                            nvf.iter()
+                                .any(|f| f.as_eph().is_some_and(|(_, this_sv, _)| this_sv == *sv))
+                        })
+                        .filter(|(&e, _)| e < epoch)
+                        .min_by(|(&e1, _), (&e2, _)| (epoch - e1).cmp(&(epoch - e2)))
+                        .unwrap();
+                    let prev_frame = prev_frames
+                        .iter()
+                        .find(|f| f.as_eph().is_some_and(|(_, this_sv, _)| this_sv == *sv))
+                        .unwrap();
+                    let prev_data =
+                        NavData::from_rinex_frame(prev_epoch, sv, prev_frame.as_eph().unwrap().2);
+                    points.insert(0, prev_data);
+                    return GetNavDataResult::AtLast(epoch, points);
                 }
             }
         }
-        Vec::new()
+        return GetNavDataResult::None;
+    }
+}
+
+impl NearestPointsFinder for TreePointsFinder {
+    fn find_nearest_points(&self, sv: &SV, epoch: &Epoch) -> Option<Vec<NavData>> {
+        let i = self.get_rinex_index(epoch);
+        let result = self.get_nav_data_from_rinex_at(i, epoch, sv);
+        let points = match result {
+            GetNavDataResult::AtMiddle(vec) => Some(vec),
+            GetNavDataResult::AtLast(epoch, mut vec) => {
+                let next_epoch = epoch + Duration::from_days(1.0);
+                let next_rinex_index = self.get_rinex_index(&next_epoch);
+                let next_nav_data = self.get_first_epoch_nav_data(next_rinex_index, &epoch, sv);
+                if let Some(dat) = next_nav_data {
+                    vec.push(dat);
+                    Some(vec)
+                } else {
+                    None
+                }
+            }
+            GetNavDataResult::AtFirst(epoch, mut vec) => {
+                let prev_epoch = epoch - Duration::from_days(1.0);
+                let prev_rinex_index = self.get_rinex_index(&prev_epoch);
+                let prev_nav_data = self.get_last_epoch_nav_data(prev_rinex_index, &epoch, sv);
+                if let Some(dat) = prev_nav_data {
+                    vec.insert(0, dat);
+                    Some(vec)
+                } else {
+                    None
+                }
+            }
+            GetNavDataResult::AtFirstLast(epoch, mut vec) => {
+                let next_epoch = epoch + Duration::from_days(1.0);
+                let next_rinex_index = self.get_rinex_index(&next_epoch);
+                let next_nav_data = self.get_first_epoch_nav_data(next_rinex_index, &epoch, sv);
+                //vec.push(next_nav_data);
+
+                if let Some(nxt_dat) = next_nav_data {
+                    vec.push(nxt_dat);
+
+                    let prev_epoch = epoch - Duration::from_days(1.0);
+                    let prev_rinex_index = self.get_rinex_index(&prev_epoch);
+                    let prev_nav_data = self.get_last_epoch_nav_data(prev_rinex_index, &epoch, sv);
+                    if let Some(prev_dat) = prev_nav_data {
+                        vec.insert(0, prev_dat);
+                        return Some(vec);
+                    }
+                }
+                None
+            }
+            GetNavDataResult::None => None,
+        };
+
+        return points;
     }
 }
 
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
+
+    use crate::nav_data::{BeiDouNavData, GPSNavData};
 
     use super::*;
 
@@ -300,11 +442,123 @@ mod tests {
     }
 
     #[test]
-    fn test_find_nearest_points() {
+    fn test_find_nearest_points_empty() {
         let finder = TreePointsFinder::new("test_data".to_string());
         let sv = SV::from_str("G01").unwrap();
         let epoch = Epoch::from_gregorian_utc(2023, 1, 1, 0, 0, 0, 0);
         let points = finder.find_nearest_points(&sv, &epoch);
-        assert!(points.is_empty());
+        assert!(points.is_none());
+    }
+
+    #[test]
+    fn test_find_nearest_points_in_middle() {
+        let finder = TreePointsFinder::new("/mnt/d/GNSS_Data/Data/Nav/".to_string());
+        let sv = SV::from_str("G01").unwrap();
+        let epoch = Epoch::from_gregorian_utc(2020, 1, 1, 4, 0, 0, 0);
+        let points = finder.find_nearest_points(&sv, &epoch);
+        assert!(points.is_some());
+        let points = points.unwrap();
+        assert_eq!(points.len(), 3);
+
+        let first = &points[0];
+        let (epoch, nav_data) = Into::<Option<(&Epoch, &GPSNavData)>>::into(first).unwrap();
+        assert_eq!(
+            epoch,
+            &Epoch::from_gregorian(2020, 1, 1, 2, 0, 0, 0, hifitime::TimeScale::GPST)
+        );
+        assert_eq!(nav_data.clock_bias, -2.479893155396E-04);
+
+        let second = &points[1];
+        let (epoch, nav_data) = Into::<Option<(&Epoch, &GPSNavData)>>::into(second).unwrap();
+        assert_eq!(
+            epoch,
+            &Epoch::from_gregorian(2020, 1, 1, 4, 0, 0, 0, hifitime::TimeScale::GPST)
+        );
+        assert_eq!(nav_data.clock_bias, -2.480773255229E-04);
+
+        let third = &points[2];
+        let (epoch, nav_data) = Into::<Option<(&Epoch, &GPSNavData)>>::into(third).unwrap();
+        assert_eq!(
+            epoch,
+            &Epoch::from_gregorian(2020, 1, 1, 6, 0, 0, 0, hifitime::TimeScale::GPST)
+        );
+
+        assert_eq!(nav_data.clock_bias, -2.481648698449E-04);
+    }
+
+    #[test]
+    fn test_find_nearest_points_in_first() {
+        let finder = TreePointsFinder::new("/mnt/d/GNSS_Data/Data/Nav/".to_string());
+        let sv = SV::from_str("G01").unwrap();
+        let epoch = Epoch::from_gregorian_utc(2020, 1, 2, 0, 0, 0, 0);
+        let points = finder.find_nearest_points(&sv, &epoch);
+        assert!(points.is_some());
+        let points = points.unwrap();
+        assert_eq!(points.len(), 3);
+
+        let first = &points[0];
+        let (epoch, nav_data) = Into::<Option<(&Epoch, &GPSNavData)>>::into(first).unwrap();
+        assert_eq!(
+            epoch,
+            &Epoch::from_gregorian(2020, 1, 1, 22, 0, 0, 0, hifitime::TimeScale::GPST)
+        );
+        assert_eq!(nav_data.clock_bias, -2.488694153726E-04);
+        assert_eq!(nav_data.i0, 9.785184457124E-01);
+
+        let second = &points[1];
+        let (epoch, nav_data) = Into::<Option<(&Epoch, &GPSNavData)>>::into(second).unwrap();
+        assert_eq!(
+            epoch,
+            &Epoch::from_gregorian(2020, 1, 2, 0, 0, 0, 0, hifitime::TimeScale::GPST)
+        );
+        assert_eq!(nav_data.clock_bias, -2.489574253559E-04);
+        assert_eq!(nav_data.i0, 9.785195370493E-01);
+
+        let third = &points[2];
+        let (epoch, nav_data) = Into::<Option<(&Epoch, &GPSNavData)>>::into(third).unwrap();
+        assert_eq!(
+            epoch,
+            &Epoch::from_gregorian(2020, 1, 2, 2, 0, 0, 0, hifitime::TimeScale::GPST)
+        );
+        assert_eq!(nav_data.clock_bias, -2.490449696779E-04);
+        assert_eq!(nav_data.i0, 9.785189123832E-01);
+    }
+
+    #[test]
+    fn test_find_nearest_points_in_last() {
+        let finder = TreePointsFinder::new("/mnt/d/GNSS_Data/Data/Nav/".to_string());
+        let sv = SV::from_str("C01").unwrap();
+        let epoch = Epoch::from_gregorian_utc(2020, 1, 1, 23, 0, 0, 0);
+        let points = finder.find_nearest_points(&sv, &epoch);
+        assert!(points.is_some());
+        let points = points.unwrap();
+        assert_eq!(points.len(), 3);
+
+        let first = &points[0];
+        let (epoch, nav_data) = Into::<Option<(&Epoch, &BeiDouNavData)>>::into(first).unwrap();
+        assert_eq!(
+            epoch,
+            &Epoch::from_gregorian(2020, 1, 1, 22, 0, 0, 0, hifitime::TimeScale::BDT)
+        );
+        assert_eq!(nav_data.clock_bias, 3.306847065687E-04);
+        assert_eq!(nav_data.i0, 7.706784981957E-02);
+
+        let second = &points[1];
+        let (epoch, nav_data) = Into::<Option<(&Epoch, &BeiDouNavData)>>::into(second).unwrap();
+        assert_eq!(
+            epoch,
+            &Epoch::from_gregorian(2020, 1, 1, 23, 0, 0, 0, hifitime::TimeScale::BDT)
+        );
+        assert_eq!(nav_data.clock_bias, 3.308483865112E-04);
+        assert_eq!(nav_data.i0, 8.333344895550E-02);
+
+        let third = &points[2];
+        let (epoch, nav_data) = Into::<Option<(&Epoch, &BeiDouNavData)>>::into(third).unwrap();
+        assert_eq!(
+            epoch,
+            &Epoch::from_gregorian(2020, 1, 2, 0, 0, 0, 0, hifitime::TimeScale::BDT)
+        );
+        assert_eq!(nav_data.clock_bias, 3.310124156997E-04);
+        assert_eq!(nav_data.i0, 8.964220563768E-02);
     }
 }

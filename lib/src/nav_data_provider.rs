@@ -24,7 +24,7 @@ impl NavDataProvider {
         let epoch = epoch_data.get_epoch();
         epoch_data
             .iter()
-            .map(|sv_data| {
+            .map_while(|sv_data| {
                 let sv = sv_data.get_sv();
                 let nav_data = self.get_nav_data(&sv, &epoch);
                 nav_data
@@ -32,9 +32,13 @@ impl NavDataProvider {
             .collect()
     }
 
-    fn get_nav_data(&self, sv: &SV, epoch: &Epoch) -> NavData {
+    fn get_nav_data(&self, sv: &SV, epoch: &Epoch) -> Option<NavData> {
         let nearest_points = self.nearest_points_finder.find_nearest_points(sv, epoch);
-        let nav_data = nearest_points.interpolate(epoch);
-        nav_data
+        if let Some(points) = nearest_points {
+            let nav_data = points.interpolate(epoch);
+            Some(nav_data)
+        } else {
+            None
+        }
     }
 }
