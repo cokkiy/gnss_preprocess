@@ -94,6 +94,19 @@ impl NavData {
         matches!(self, NavData::SBASNavData(_))
     }
 
+    /// Returns the epoch of the NavData
+    pub fn epoch(&self) -> Epoch {
+        match *self {
+            NavData::GPSNavData((ref epoch, _))
+            | NavData::GlonassNavData((ref epoch, _))
+            | NavData::GalileoNavData((ref epoch, _))
+            | NavData::BeiDouNavData((ref epoch, _))
+            | NavData::IRNSSNavData((ref epoch, _))
+            | NavData::QZSSNavData((ref epoch, _))
+            | NavData::SBASNavData((ref epoch, _)) => *epoch,
+        }
+    }
+
     /// Creates a NavData from a Rinex Ephemeris
     /// # Arguments
     /// * `epoch` - The epoch of the ephemeris
